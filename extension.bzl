@@ -30,20 +30,18 @@ def _build_stamp(repository_ctx):
     """
 
     for big_var, small_var in [
-        ("BUILDKITE_BUILD_NUMBER", None),
-        ("CIRCLE_BUILD_NUM", None),
-        ("GITHUB_RUN_NUMBER", "GITHUB_ATTEMPT_NUMBER"),
-        ("BUILD_NUMBER", None),
-        ("DRONE_BUILD_NUMBER", None),
-        # FIXME: Gitlab?
-        # FIXME: Aspect Workflows
+        ("BUILDKITE_BUILD_NUMBER", None),               # Buildkite
+        ("GITHUB_RUN_NUMBER", "GITHUB_ATTEMPT_NUMBER"), # Github
+        ("CIRCLE_BUILD_NUM", None),                     # CircleCI
+        ("BUILD_NUMBER", None),                         # Jenkins
+        ("DRONE_BUILD_NUMBER", None),                   # Drone
     ]:
         big = repository_ctx.getenv(big_var)
-        small = ""
+        small = "0"
         if small_var:
             small = repository_ctx.getenv(small_var)
-            if small:
-                small = "+" + small
+        if small:
+            small = "+" + small
         if big != None:
             return big + small
 
@@ -60,7 +58,7 @@ def _repo_id(repository_ctx):
         "BUILDKITE_REPO",        # Buildkite
         "GITHUB_REPOSITORY",     # GH
         "CI_REPOSITORY_URL",     # GL
-        "CIRCLE_REPOSITORY_URL", # Circle
+        "CIRCLE_REPOSITORY_URL", # CircleCI
         "GIT_URL",               # Jenkins
         "GIT_URL_1",             # Jenkins
         "DRONE_REPO_LINK"        # Drone
@@ -77,8 +75,14 @@ def _repo_id(repository_ctx):
     if at != -1:
         repo = repo[at+1:]
 
+    # Could have a ?secret= suffix; strip that
+    qmark = repo.find("?")
+    if qmark != -1:
+        repo = repo[:qmark]
+
     # FIXME: Use a better hashcode?
     return hex(hash(repo))[2:]
+
 
 def _repo_org(repository_ctx):
     """Try to extract the organization name.
@@ -92,7 +96,7 @@ def _repo_org(repository_ctx):
         "CI_PROJECT_NAMESPACE",        # GL
         "CIRCLE_PROJECT_USERNAME",     # Circle
         "DRONE_REPO_NAMESPACE",        # Drone
-        # FIXME: What's the equivalent for Jenkins?
+        # TODO: Jenkins only has the fetch URL which seems excessively sensitive
     ]:
         repo = repository_ctx.getenv(var)
         if repo:
@@ -118,6 +122,13 @@ def parse_opt_out(flag, default=[]):
     added = []
     removed = []
 
+    def _handle(acc, term):
+        if term in groups:
+            for subterm in groups[term]:
+                acc.append(subterm)
+        else:
+            acc.append(term)
+
     for term in terms:
         term = term.strip().lower()
         if not term:
@@ -125,28 +136,14 @@ def parse_opt_out(flag, default=[]):
 
         if term.startswith("-"):
             term = term[1:]
-            if term in groups:
-                for item in groups[term]:
-                    removed.append(item)
-
-            else:
-                removed.append(term)
+            _handle(removed, term)
 
         elif term.startswith("+"):
             term = term[1:]
-
-            if term in groups:
-                for item in groups[term]:
-                    added.append(item)
-            else:
-                added.append(term)
+            _handle(added, term)
 
         else:
-            if term in groups:
-                for item in groups[term]:
-                    specified.append(item)
-            else:
-                specified.append(term)
+            _handle(specified, term)
 
     if not specified:
         specified = default
@@ -238,6 +235,7 @@ tel_repository = repository_rule(
   },
 )
 
+
 def _tel_impl(module_ctx):
     tel_repository(
         name = "aspect_tools_telemetry_report",
@@ -246,6 +244,7 @@ def _tel_impl(module_ctx):
             for report in module_ctx.modules
         },
     )
+
 
 telemetry = module_extension(
     implementation = _tel_impl,

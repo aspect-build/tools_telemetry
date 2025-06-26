@@ -19,7 +19,7 @@ load("@aspect_tools_telemetry_report//:defs.bzl", "TELEMETRY") # buildifier: dis
 ```
 
 ## When reporting occurs
-`tools_telemetry` is implemented as a Bazel module which performs side-effects.
+`aspect_tools_telemetry` is implemented as a Bazel module which performs side-effects.
 This means that telemetry is collected at repository granularity when Bazel modules are invalidated and re-evaluate.
 
 Examples:
@@ -52,3 +52,19 @@ If `ASPECT_TOOLS_TELEMETRY` is set to the empty string, no data will be reported
 ## Report inspection
 
 For transparency reports are persisted into the Bazel configuration and can be inspected as `@aspect_tools_telemetry_report//:report.json`
+
+## Example report
+
+```json
+{
+  "build": "33",
+  "ci": false,
+  "deps": {
+    "aspect_rules_py": "0.0.0",
+    "aspect_tools_telemetry": "0.0.0"
+  },
+  "id": "2d8f7251",
+  "org": "aspect-build"
+}
+```
+
