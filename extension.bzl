@@ -13,9 +13,9 @@ For transparency the report data we submit is persisted
 as @aspect_telemetry_report//:report.json
 """
 
-_TELEMETRY_ENV_VAR = "ASPECT_TOOLS_TELEMETRY"
-_TELEMETRY_DEST = "https://telemetry.aspect.build/api/v0/ingest"
-_TELEMETRY_FEATURES = ["id", "org", "buildnum", "buildci", "deps"]
+TELEMETRY_ENV_VAR = "ASPECT_TOOLS_TELEMETRY"
+TELEMETRY_DEST = "https://telemetry.aspect.build/api/v0/ingest"
+TELEMETRY_FEATURES = ["id", "org", "buildnum", "buildci", "deps"]
 
 def _is_ci(repository_ctx):
     """Detect if the build is hppening in 'CI'. Pretty much all the vendors set this."""
@@ -110,7 +110,7 @@ def parse_opt_out(flag, default=[]):
 
     terms = flag.split(",")
     groups = {
-        "all": _TELEMETRY_FEATURES,
+        "all": TELEMETRY_FEATURES,
     }
     acc = {}
 
@@ -164,10 +164,10 @@ def parse_opt_out(flag, default=[]):
 def _tel_repository_impl(repository_ctx):
     curl = repository_ctx.which("curl") or repository_ctx.which("curl.exe")
 
-    allowed_val = repository_ctx.getenv(_TELEMETRY_ENV_VAR)
-    allowed_telemetry = parse_opt_out(allowed_val or "all", _TELEMETRY_FEATURES)
+    allowed_val = repository_ctx.getenv(TELEMETRY_ENV_VAR)
+    allowed_telemetry = parse_opt_out(allowed_val or "all", TELEMETRY_FEATURES)
 
-    id = repository_ctx.getenv(_TELEMETRY_ENV_VAR)
+    id = repository_ctx.getenv(TELEMETRY_ENV_VAR)
 
     telemetry = {}
     if "id" in allowed_telemetry:
@@ -219,7 +219,7 @@ exports_files(["report.json", "defs.bzl"], visibility = ["//visibility:public"])
                 "--request", "POST",
                 "--header", "Content-Type:application/json",
                 "--data", "@report.json",
-                _TELEMETRY_DEST],
+                TELEMETRY_DEST],
           timeout=1
         )
         if res.return_code == 0:

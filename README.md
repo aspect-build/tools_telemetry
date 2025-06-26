@@ -13,6 +13,9 @@ bazel_dep(name = "aspect_telemetry", version = "0.1.0")
 tel = use_extension("@aspect_telemetry//:extension.bzl", "telemetry")
 tel.report()
 use_repo(tel, "aspect_tools_telemetry_report")
+
+# ruleset defs.bzl
+load("@aspect_tools_telemetry_report//:defs.bzl", "TELEMETRY") # buildifier: disable=load
 ```
 
 ## When reporting occurs
