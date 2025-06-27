@@ -162,6 +162,10 @@ def _tel_repository_impl(repository_ctx):
     curl = repository_ctx.which("curl") or repository_ctx.which("curl.exe")
 
     allowed_val = repository_ctx.getenv(TELEMETRY_ENV_VAR)
+
+    if repository_ctx.getenv("DO_NOT_TRACK"):
+        allowed_val = "-all"
+
     allowed_telemetry = parse_opt_out(allowed_val or "all", TELEMETRY_FEATURES)
 
     id = repository_ctx.getenv(TELEMETRY_ENV_VAR)
