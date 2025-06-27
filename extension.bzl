@@ -13,17 +13,16 @@ For transparency the report data we submit is persisted
 as @aspect_telemetry_report//:report.json
 """
 
-TELEMETRY_ENV_VAR = "ASPECT_TOOLS_TELEMETRY"
-TELEMETRY_DEST = "https://telemetry.aspect.build/api/v0/ingest"
-TELEMETRY_FEATURES = ["id", "org", "buildnum", "buildci", "deps"]
+TELEMETRY_REGISTRY = {}
 
 def _is_ci(repository_ctx):
     """Detect if the build is hppening in 'CI'. Pretty much all the vendors set this."""
 
     return repository_ctx.getenv("CI") != None
 
+TELEMETRY_REGISTRY["ci"] = _is_ci
 
-def _build_stamp(repository_ctx):
+def _build_counter(repository_ctx):
     """Try to get a counter for the build.
 
     This allows estimation of rate of builds.
@@ -40,10 +39,37 @@ def _build_stamp(repository_ctx):
         small = "0"
         if small_var:
             small = repository_ctx.getenv(small_var)
-        if small:
-            small = "+" + small
         if big != None:
-            return big + small
+            return [big, small]
+
+TELEMETRY_REGISTRY["counter"] = _build_counter
+
+CI_PLATFORMS = {
+    "GITHUB_ACTION": "github-actions",
+    "GITHUB_ENV": "github-actions",
+
+    "BUILDKITE_BIN_PATH": "buildkite",
+    "BUILDKITE_BUILD_NUMBER": "buildkite",
+
+    "CIRCLE_BUILD_NUM": "circleci",
+    "CIRCLECI": "circleci",
+
+    "JENKINS_HOME": "jenkins",
+    "JENKINS_URL": "jenkins",
+    "GIT_URL": "jenkins",
+    "GIT_URL_1": "jenkins",
+}
+
+def _build_runner(repository_ctx):
+    """Try to identify the runner environment.
+
+    """
+    for var, platform in CI_PLATFORMS.items():
+        val = repository_ctx.getenv(var)
+        if val != None:
+            return platform
+
+TELEMETRY_REGISTRY["runner"] = _build_runner
 
 
 def _repo_id(repository_ctx):
@@ -83,6 +109,7 @@ def _repo_id(repository_ctx):
     # FIXME: Use a better hashcode?
     return hex(hash(repo))[2:]
 
+TELEMETRY_REGISTRY["id"] = _repo_id
 
 def _repo_org(repository_ctx):
     """Try to extract the organization name.
@@ -101,6 +128,25 @@ def _repo_org(repository_ctx):
         repo = repository_ctx.getenv(var)
         if repo:
             return repo
+
+TELEMETRY_REGISTRY["org"] = _repo_org
+
+def _repo_deps(repository_ctx):
+    """Extract the installed Aspect libraries and versions.
+
+    """
+
+    acc = []
+    for k, v in repository_ctx.attr.install_reports.items():
+        acc.append([k, v])
+    return acc
+
+TELEMETRY_REGISTRY["deps"] = _repo_deps
+
+TELEMETRY_ENV_VAR = "ASPECT_TOOLS_TELEMETRY"
+TELEMETRY_DEST_VAR = "ASPECT_TOOLS_TELEMETRY_ENDPOINT"
+TELEMETRY_DEST = "https://telemetry.aspect.build/ingest"
+TELEMETRY_FEATURES = list(TELEMETRY_REGISTRY.keys())
 
 
 def parse_opt_out(flag, default=[]):
@@ -159,33 +205,29 @@ def parse_opt_out(flag, default=[]):
 
 
 def _tel_repository_impl(repository_ctx):
+    ## Try to find a curl
     curl = repository_ctx.which("curl") or repository_ctx.which("curl.exe")
 
-    allowed_val = repository_ctx.getenv(TELEMETRY_ENV_VAR)
+    ## Figure out where we scribe to
+    # Note that this allows the endpoint to be overriden
+    endpoint = repository_ctx.getenv(TELEMETRY_DEST_VAR)
+    if endpoint == None:
+        endpoint = TELEMETRY_DEST
 
+    ## Parse the feature flagging var
+    allowed_val = repository_ctx.getenv(TELEMETRY_ENV_VAR)
     if repository_ctx.getenv("DO_NOT_TRACK"):
         allowed_val = "-all"
 
     allowed_telemetry = parse_opt_out(allowed_val or "all", TELEMETRY_FEATURES)
 
-    id = repository_ctx.getenv(TELEMETRY_ENV_VAR)
-
+    ## Collect enabled data
     telemetry = {}
-    if "id" in allowed_telemetry:
-        telemetry["id"] = _repo_id(repository_ctx)
+    for feature, handler in TELEMETRY_REGISTRY.items():
+        if feature in allowed_telemetry:
+            telemetry[feature] = handler(repository_ctx)
 
-    if "org" in allowed_telemetry:
-        telemetry["org"] = _repo_org(repository_ctx)
-
-    if "buildnum" in allowed_telemetry:
-        telemetry["build"] = _build_stamp(repository_ctx)
-
-    if "buildci" in allowed_telemetry:
-        telemetry["ci"] = _is_ci(repository_ctx)
-
-    if "deps" in allowed_telemetry:
-        telemetry["deps"] = repository_ctx.attr.install_reports
-
+    ## Lay down report files
     telemetry_file = repository_ctx.file(
         "report.json",
         json.encode_indent(telemetry, indent="  "),
@@ -205,29 +247,20 @@ exports_files(["report.json", "defs.bzl"], visibility = ["//visibility:public"])
 """
     )
 
-    report_content = "\nreport_id = None\n"
-    if not allowed_telemetry:
-        # User has opted out, no telemetry is allowed
-        pass
-
-    elif curl:
-        # Happy path. Curl is pretty universal.
-        # Note that we're setting pretty aggressive timeouts here.
-        res = repository_ctx.execute([
+    ## Send the report if enabled
+    # Note that ANY of these things will disable telemetry
+    if curl and endpoint and allowed_telemetry:
+        # Note that errors are silent, no attempt is made at caching/slabbing
+        repository_ctx.execute([
           curl, "--quiet",
-                "--max-time=1",
-                "--connect-timeout=0.5",
+                "--max-time", "1",
+                "--connect-timeout", "0.5",
                 "--request", "POST",
                 "--header", "Content-Type:application/json",
                 "--data", "@report.json",
                 TELEMETRY_DEST],
-          timeout=1
+          timeout=2
         )
-        if res.return_code == 0:
-            resp = json.decode(res.stdout)
-            report_content = """\
-report_id = {}
-""".format(repr(resp["id"]))
 
 
 tel_repository = repository_rule(
@@ -249,7 +282,8 @@ def _tel_impl(module_ctx):
         },
     )
 
-
+# TODO: Should the extension in the main module be able to set telemetry feature
+# flags or do we want to stick with environment variables.
 telemetry = module_extension(
     implementation = _tel_impl,
 )

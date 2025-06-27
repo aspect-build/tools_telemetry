@@ -1,3 +1,1 @@
-load("//:tests.bzl", "test_suite")
-
-test_suite()
+# The root BUILD.bazel should be empty to minimize user-exposed deps

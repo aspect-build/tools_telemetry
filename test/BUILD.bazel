@@ -1,0 +1,3 @@
+load(":flag_tests.bzl", flag_test_suite="test_suite")
+
+flag_test_suite()
