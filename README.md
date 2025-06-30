@@ -48,7 +48,7 @@ The telemetry module can be controlled at a finer grain by setting the `$ASPECT_
 - `ci`: Is the build occurring in CI/CD or locally
 - `runner`: The CI/CD system being used if any
 - `counter`: The build counter if available
-- `deps`: The Aspect rulesets and their versions which are in use
+- `deps`: The active set of bzlmod modules from the public registry
 
 ### Example report
 
@@ -59,19 +59,39 @@ The telemetry module can be controlled at a finer grain by setting the `$ASPECT_
     "678",
     "0"
   ],
-  "deps": [
-    [
-      "simple-example",
-      "0.0.0"
-    ],
-    [
-      "aspect_tools_telemetry",
-      "0.0.0"
-    ]
-  ],
+  "deps": {
+    "abseil-cpp": "20240116.1",
+    "aspect_bazel_lib": "2.19.4",
+    "bazel_features": "1.30.0",
+    "bazel_skylib": "1.8.0",
+    "buildozer": "7.1.2",
+    "googletest": "1.14.0.bcr.1",
+    "jq.bzl": "0.1.0",
+    "jsoncpp": "1.9.5",
+    "package_metadata": "0.0.2",
+    "platforms": "0.0.11",
+    "protobuf": "29.0",
+    "pybind11_bazel": "2.11.1",
+    "re2": "2023-09-01",
+    "rules_android": "0.1.1",
+    "rules_cc": "0.1.1",
+    "rules_fuzzing": "0.5.2",
+    "rules_java": "8.12.0",
+    "rules_jvm_external": "6.3",
+    "rules_kotlin": "1.9.6",
+    "rules_license": "1.0.0",
+    "rules_pkg": "1.0.1",
+    "rules_proto": "7.0.2",
+    "rules_python": "0.40.0",
+    "rules_shell": "0.4.1",
+    "stardoc": "0.7.1",
+    "tar.bzl": "0.2.1",
+    "yq.bzl": "0.1.1",
+    "zlib": "1.3.1.bcr.5"
+  },
   "id": "x32faf8f6",
-  "org": "aspect-build",
-  "runner": "buildkite"
+  "org": null,
+  "runner": "jenkins"
 }
 ```
 

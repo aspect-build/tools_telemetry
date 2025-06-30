@@ -1,3 +1,4 @@
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@aspect_bazel_lib//lib:strings.bzl", "hex")
 
 """
@@ -131,17 +132,31 @@ def _repo_org(repository_ctx):
 
 TELEMETRY_REGISTRY["org"] = _repo_org
 
-def _repo_deps(repository_ctx):
+def _repo_bzlmod(repository_ctx):
     """Extract the installed Aspect libraries and versions.
 
+    Note that in order to protect the privacy of internal modules and internal
+    registries we only look at BCR sourced stuff.
     """
 
-    acc = []
-    for k, v in repository_ctx.attr.install_reports.items():
-        acc.append([k, v])
-    return acc
+    lockfile_path = repository_ctx.path(paths.join(str(repository_ctx.workspace_root), "MODULE.bazel.lock"))
+    # Since this is a bzlmod-only telemetry package this should always hold but to be safe
+    if lockfile_path.exists:
+        # The lockfile's registry file hashes contain a few things:
+        # - The `bazel_registry.json` (if any) from the registry
+        # - A `MODULE.bazel` for every module version considered during resolution
+        # - A `source.json` for the _selected_ version
+        #
+        # Since we're trying to collect the selected dep versions, we can just
+        # look for the source lists.
+        source_json = "/source.json"
+        bcr = "https://bcr.bazel.build/modules/"
+        lockfile_content = json.decode(repository_ctx.read(lockfile_path))
+        selected_module_source_urls = [it for it in lockfile_content["registryFileHashes"].keys() if it.endswith(source_json) and it.startswith(bcr)]
+        return dict([it[len(bcr):][:0-len(source_json)].split("/") for it in selected_module_source_urls])
 
-TELEMETRY_REGISTRY["deps"] = _repo_deps
+TELEMETRY_REGISTRY["deps"] = _repo_bzlmod
+
 
 TELEMETRY_ENV_VAR = "ASPECT_TOOLS_TELEMETRY"
 TELEMETRY_DEST_VAR = "ASPECT_TOOLS_TELEMETRY_ENDPOINT"
