@@ -48,7 +48,6 @@ We suggest setting one of these options in your `.bazelrc`
 
 ## Reporting features
 - `id`: A hash of the repo is used as a stable anonymous ID
-- `org`: An organization name string is reported if available
 - `ci`: Is the build occurring in CI/CD or locally
 - `runner`: The CI/CD system being used if any
 - `counter`: The build counter if available
