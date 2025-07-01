@@ -155,7 +155,7 @@
   "moduleExtensions": {
     "@@aspect_tools_telemetry+//:extension.bzl%telemetry": {
       "general": {
-        "bzlTransitiveDigest": "Hlsj19oDGi/L/XfLBx6ocV+ylf6M3fzbrsbQP4LF0+c=",
+        "bzlTransitiveDigest": "O7u8jQqMua8rDCPjZmWAuB1HM0VBH/IbxMJcm+pQUEE=",
         "usagesDigest": "Hw1RmkqUoOCGr84h0munD3pk5WGitRzn+3mGpmwFe2c=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},

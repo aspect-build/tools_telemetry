@@ -31,10 +31,11 @@ def _build_counter(repository_ctx):
 
     for big_var, small_var in [
         ("BUILDKITE_BUILD_NUMBER", None),               # Buildkite
-        ("GITHUB_RUN_NUMBER", "GITHUB_ATTEMPT_NUMBER"), # Github
+        ("GITHUB_RUN_NUMBER", "GITHUB_ATTEMPT_NUMBER"), # Github/forgejo/gitea
+        ("CI_PIPELINE_IID", None),                      # Gitlab
         ("CIRCLE_BUILD_NUM", None),                     # CircleCI
-        ("BUILD_NUMBER", None),                         # Jenkins
         ("DRONE_BUILD_NUMBER", None),                   # Drone
+        ("BUILD_NUMBER", None),                         # Jenkins
     ]:
         big = repository_ctx.getenv(big_var)
         small = "0"
@@ -45,27 +46,20 @@ def _build_counter(repository_ctx):
 
 TELEMETRY_REGISTRY["counter"] = _build_counter
 
-CI_PLATFORMS = {
-    "GITHUB_ACTION": "github-actions",
-    "GITHUB_ENV": "github-actions",
-
-    "BUILDKITE_BIN_PATH": "buildkite",
-    "BUILDKITE_BUILD_NUMBER": "buildkite",
-
-    "CIRCLE_BUILD_NUM": "circleci",
-    "CIRCLECI": "circleci",
-
-    "JENKINS_HOME": "jenkins",
-    "JENKINS_URL": "jenkins",
-    "GIT_URL": "jenkins",
-    "GIT_URL_1": "jenkins",
-}
-
 def _build_runner(repository_ctx):
     """Try to identify the runner environment.
 
     """
-    for var, platform in CI_PLATFORMS.items():
+    for var, platform in [
+        ("BUILDKITE_BUILD_NUMBER", "buildkite"),
+        ("FORGEJO_TOKEN", "forgejo"),  # FIXME: This value is a secret, avoid
+        ("GITEA_ACTIONS", "gitea"),
+        ("GITHUB_RUN_NUMBER", "github-actions"),
+        ("CI_PIPELINE_IID", "gitlab"),
+        ("CIRCLE_BUILD_NUM", "circleci"),
+        ("DRONE_BUILD_NUMBER", "drone"),
+        ("BUILD_NUMBER", "jenkins"),
+    ]:
         val = repository_ctx.getenv(var)
         if val != None:
             return platform
@@ -83,7 +77,7 @@ def _repo_id(repository_ctx):
     repo = None
     for var in [
         "BUILDKITE_REPO",        # Buildkite
-        "GITHUB_REPOSITORY",     # GH
+        "GITHUB_REPOSITORY",     # GH/Gitea/Forgejo
         "CI_REPOSITORY_URL",     # GL
         "CIRCLE_REPOSITORY_URL", # CircleCI
         "GIT_URL",               # Jenkins
@@ -120,7 +114,7 @@ def _repo_org(repository_ctx):
     repo = None
     for var in [
         "BUILDKITE_ORGANIZATION_SLUG", # Buildkite
-        "GITHUB_REPOSITORY_OWNER",     # GH
+        "GITHUB_REPOSITORY_OWNER",     # GH/Gitea/Forgejo
         "CI_PROJECT_NAMESPACE",        # GL
         "CIRCLE_PROJECT_USERNAME",     # Circle
         "DRONE_REPO_NAMESPACE",        # Drone
