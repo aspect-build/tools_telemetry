@@ -94,7 +94,6 @@ We suggest setting one of these options in your `.bazelrc`
     "zlib": "1.3.1.bcr.5"
   },
   "id": "x32faf8f6",
-  "org": null,
   "runner": "jenkins"
 }
 ```
@@ -179,7 +178,6 @@ INFO: Build completed successfully, 2 total actions
     "zlib": "1.3.1.bcr.5"
   },
   "id": "32faf8f6",
-  "org": null,
   "runner": "drone"
 }%
 
