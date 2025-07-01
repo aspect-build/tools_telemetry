@@ -4,6 +4,8 @@ Aspect's ruleset telemetry Bazel module.
 
 This package defines a bzlmod extension which allows for rulesets to report useage to Aspect, which allows us to estimate the install base of our rulesets and monitor trends in the ecosystem.
 
+Telemetry is disabled by default and requires an explicit user opt in/out as part of the build configuration.
+
 ## Usage
 
 ```
@@ -103,6 +105,85 @@ The included examples/simple submodule provides a sandbox for easily testing the
 
 ``` shellsession
 ❯ cd examples/simple
+
+# Default unconfigured behavior
+❯ bazel build \
+    --repo_env=CI=1 \
+    --repo_env=DRONE_BUILD_NUMBER=678 \
+    --repo_env=GIT_URL=http://github.com/aspect-build/tools_telemetry.git \
+    //:report.json && cat bazel-bin/report.json
+DEBUG: /private/var/tmp/_bazel_arrdem/26bdb308fe44511193031a4146df0d52/external/aspect_tools_telemetry+/extension.bzl:246:14: tools_telemetry is loaded but not configured.
+
+Telemetry is disabled by default.
+
+To accept diagnostic telemetry add this entry to your .bazelrc
+  common --repo_env=ASPECT_TOOLS_TELEMETRY=all
+
+For more details please see https://github.com/aspect-build/tools_telemetry
+INFO: Analyzed target //:report.json (7 packages loaded, 10 targets configured).
+INFO: Found 1 target...
+Target //:report.json up-to-date:
+  bazel-bin/report.json
+INFO: Elapsed time: 0.117s, Critical Path: 0.02s
+INFO: 2 processes: 1 internal, 1 darwin-sandbox.
+INFO: Build completed successfully, 2 total actions
+{}%
+
+# Enabled behavior
+❯ bazel build \
+    --repo_env=ASPECT_TOOLS_TELEMETRY=all \
+    --repo_env=CI=1 --repo_env=DRONE_BUILD_NUMBER=678 \
+    --repo_env=GIT_URL=http://github.com/aspect-build/tools_telemetry.git \
+    //:report.json && cat bazel-bin/report.json
+INFO: Analyzed target //:report.json (7 packages loaded, 10 targets configured).
+INFO: Found 1 target...
+Target //:report.json up-to-date:
+  bazel-bin/report.json
+INFO: Elapsed time: 0.103s, Critical Path: 0.02s
+INFO: 2 processes: 1 internal, 1 darwin-sandbox.
+INFO: Build completed successfully, 2 total actions
+{
+  "ci": true,
+  "counter": [
+    "678",
+    "0"
+  ],
+  "deps": {
+    "abseil-cpp": "20240116.1",
+    "aspect_bazel_lib": "2.19.4",
+    "bazel_features": "1.30.0",
+    "bazel_skylib": "1.8.0",
+    "buildozer": "7.1.2",
+    "googletest": "1.14.0.bcr.1",
+    "jq.bzl": "0.1.0",
+    "jsoncpp": "1.9.5",
+    "package_metadata": "0.0.2",
+    "platforms": "0.0.11",
+    "protobuf": "29.0",
+    "pybind11_bazel": "2.11.1",
+    "re2": "2023-09-01",
+    "rules_android": "0.1.1",
+    "rules_cc": "0.1.1",
+    "rules_fuzzing": "0.5.2",
+    "rules_java": "8.12.0",
+    "rules_jvm_external": "6.3",
+    "rules_kotlin": "1.9.6",
+    "rules_license": "1.0.0",
+    "rules_pkg": "1.0.1",
+    "rules_proto": "7.0.2",
+    "rules_python": "0.40.0",
+    "rules_shell": "0.4.1",
+    "stardoc": "0.7.1",
+    "tar.bzl": "0.2.1",
+    "yq.bzl": "0.1.1",
+    "zlib": "1.3.1.bcr.5"
+  },
+  "id": "32faf8f6",
+  "org": null,
+  "runner": "drone"
+}%
+
+# Disabled behavior
 ❯ bazel build \
     --repo_env=CI=1 \
     --repo_env=BUILD_NUMBER=678 \
@@ -122,7 +203,12 @@ INFO: Build completed successfully, 1 total action
 
 ## Report inspection
 
-For transparency reports are persisted into the Bazel configuration and can be inspected as `@aspect_tools_telemetry_report//:report.json`
+For transparency reports are persisted into the Bazel configuration and can be inspected as `@aspect_tools_telemetry_report//:report.json`.
+
+
+``` shellsession
+❯ cat $(bazel query --output=location @aspect_tools_telemetry_report//:report.json | cut -d: -f1)
+```
 
 ## Privacy policy
 
