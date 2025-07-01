@@ -124,4 +124,4 @@ For transparency reports are persisted into the Bazel configuration and can be i
 
 ## Privacy policy
 
-https://www.aspect.build/privacy
+https://www.aspect.build/privacy-policy
