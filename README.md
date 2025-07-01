@@ -42,6 +42,8 @@ The telemetry module can be controlled at a finer grain by setting the `$ASPECT_
 --repo_env=ASPECT_TOOLS_TELEMETRY=deps # only report aspect deps
 ```
 
+We suggest setting one of these options in your `.bazelrc`
+
 ## Reporting features
 - `id`: A hash of the repo is used as a stable anonymous ID
 - `org`: An organization name string is reported if available

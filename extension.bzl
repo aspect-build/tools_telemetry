@@ -110,7 +110,7 @@ def _repo_id(repository_ctx):
         repo = repo[:qmark]
 
     # FIXME: Use a better hashcode?
-    return hex(hash(repo))[2:]
+    return hex(hash(repo))[3:]
 
 TELEMETRY_REGISTRY["id"] = _repo_id
 
@@ -234,8 +234,25 @@ def _tel_repository_impl(repository_ctx):
         endpoint = TELEMETRY_DEST
 
     ## Parse the feature flagging var
-    allowed_val = repository_ctx.getenv(TELEMETRY_ENV_VAR)
+    tel_val = repository_ctx.getenv(TELEMETRY_ENV_VAR)
+
+    allowed_val = None
+
     if repository_ctx.getenv("DO_NOT_TRACK"):
+        allowed_val = "-all"
+    elif tel_val:
+        allowed_val = tel_val
+    else:
+        print("""\
+tools_telemetry is loaded but not configured.
+
+Telemetry is disabled by default.
+
+To accept diagnostic telemetry add this entry to your .bazelrc
+  common --repo_env=ASPECT_TOOLS_TELEMETRY=all
+
+For more details please see https://github.com/aspect-build/tools_telemetry
+""")
         allowed_val = "-all"
 
     allowed_telemetry = parse_opt_out(allowed_val or "all", TELEMETRY_FEATURES)
