@@ -36,6 +36,8 @@ def _build_counter(repository_ctx):
         ("CIRCLE_BUILD_NUM", None),                     # CircleCI
         ("DRONE_BUILD_NUMBER", None),                   # Drone
         ("BUILD_NUMBER", None),                         # Jenkins
+        ("CI_PIPELINE_NUMBER", None),                   # Woodpecker?
+        ("TRAVIS_BUILD_NUMBER", None),                  # Travis
     ]:
         big = repository_ctx.getenv(big_var)
         small = "0"
@@ -55,14 +57,18 @@ def _build_runner(repository_ctx):
         ("FORGEJO_TOKEN", "forgejo"),  # FIXME: This value is a secret, avoid
         ("GITEA_ACTIONS", "gitea"),
         ("GITHUB_RUN_NUMBER", "github-actions"),
-        ("CI_PIPELINE_IID", "gitlab"),
+        ("GITLAB_CI", "gitlab"),
         ("CIRCLE_BUILD_NUM", "circleci"),
         ("DRONE_BUILD_NUMBER", "drone"),
         ("BUILD_NUMBER", "jenkins"),
+        ("TRAVIS", "travis")
     ]:
         val = repository_ctx.getenv(var)
         if val != None:
             return platform
+
+    # Set on Woodpecker and in some other environments
+    return repository_ctx.getenv("CI_SYSTEM_NAME")
 
 TELEMETRY_REGISTRY["runner"] = _build_runner
 
@@ -82,7 +88,9 @@ def _repo_id(repository_ctx):
         "CIRCLE_REPOSITORY_URL", # CircleCI
         "GIT_URL",               # Jenkins
         "GIT_URL_1",             # Jenkins
-        "DRONE_REPO_LINK"        # Drone
+        "DRONE_REPO_LINK",       # Drone
+        "CI_REPO",               # Woodpecker
+        "TRAVIS_REPO_SLUG",      # Travis
     ]:
         repo = repository_ctx.getenv(var)
         if repo:
@@ -117,8 +125,10 @@ def _repo_org(repository_ctx):
         "GITHUB_REPOSITORY_OWNER",     # GH/Gitea/Forgejo
         "CI_PROJECT_NAMESPACE",        # GL
         "CIRCLE_PROJECT_USERNAME",     # Circle
-        "DRONE_REPO_NAMESPACE",        # Drone
         # TODO: Jenkins only has the fetch URL which seems excessively sensitive
+        "DRONE_REPO_NAMESPACE",        # Drone
+        "CI_REPO_OWNER",               # Woodpecker
+        "TRAVIS_REPO_SLUG",            # Travis
     ]:
         repo = repository_ctx.getenv(var)
         if repo:
