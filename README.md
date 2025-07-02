@@ -2,7 +2,7 @@
 
 Aspect's ruleset telemetry Bazel module.
 
-This package defines a bzlmod extension which allows for rulesets to report useage to Aspect, which allows us to estimate the install base of our rulesets and monitor trends in the ecosystem.
+This package defines a bzlmod extension which allows for rulesets to report usage to Aspect, which allows us to estimate the install base of our rulesets and monitor trends in the ecosystem.
 
 Telemetry is disabled by default and requires an explicit user opt in/out as part of the build configuration.
 
@@ -22,7 +22,7 @@ load("@aspect_tools_telemetry_report//:defs.bzl", "TELEMETRY") # buildifier: dis
 
 ## When reporting occurs
 `aspect_tools_telemetry` is implemented as a Bazel module which performs side-effects.
-This means that telemetry is collected at repository granularity only when Bazel modules are invalidated and re-evaluate.
+This means that telemetry is collected at repository granularity only when Bazel modules are invalidated and re-evaluated.
 
 Examples:
 - A user adding a new Bazel dependency will invalidate modules and trigger reporting
@@ -31,7 +31,7 @@ Examples:
 ## Controlling reporting
 The telemetry module honors `$DO_NOT_TRACK` and will disable itself if this variable is set.
 
-The telemetry module can be controlled at a finer grain by setting the `$ASPECT_TOOLS_TELEMETRY` environment variable.
+The telemetry module can be controlled at a finer granularity by setting the `$ASPECT_TOOLS_TELEMETRY` environment variable.
 `ASPECT_TOOLS_TELEMETRY` is a comma joined list of reporting features using Bazel's set notation.
 
 ### Example configurations
@@ -99,7 +99,7 @@ We suggest setting one of these options in your `.bazelrc`
 
 ## Example exploration
 
-The included examples/simple submodule provides a sandbox for easily testing the temeletry module's behavior.
+The included examples/simple submodule provides a sandbox for easily testing the telemetry module's behavior.
 
 ``` shellsession
 ❯ cd examples/simple
