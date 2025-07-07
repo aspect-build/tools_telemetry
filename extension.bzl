@@ -1,5 +1,5 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("@aspect_bazel_lib//lib:strings.bzl", "hex")
+load("//:xorshift.bzl", hash="xorshift")
 
 """
 Telemtry bound for Aspect.
@@ -110,7 +110,7 @@ def _repo_id(repository_ctx):
         repo = repo[:qmark]
 
     # FIXME: Use a better hashcode?
-    return hex(hash(repo))[3:]
+    return hash(repo)
 
 TELEMETRY_REGISTRY["id"] = _repo_id
 
@@ -174,7 +174,7 @@ def _repo_user(repository_ctx):
         user = user.replace("[bot]", "")
 
         # FIXME: Use a better hashcode?
-        return hex(hash(user))[3:]
+        return hash(user)
 
 TELEMETRY_REGISTRY["user"] = _repo_user
 
