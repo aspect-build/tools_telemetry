@@ -64,10 +64,7 @@ We suggest setting one of these options in your `.bazelrc`
 ```json
 {
   "ci": true,
-  "counter": [
-    "678",
-    "0"
-  ],
+  "counter": "678",
   "deps": {
     "abseil-cpp": "20240116.1",
     "aspect_bazel_lib": "2.19.4",
@@ -138,10 +135,7 @@ INFO: 2 processes: 1 internal, 1 darwin-sandbox.
 INFO: Build completed successfully, 2 total actions
 {
   "ci": true,
-  "counter": [
-    "678",
-    "0"
-  ],
+  "counter": "678",
   "deps": {
     "abseil-cpp": "20240116.1",
     "aspect_bazel_lib": "2.19.4",
@@ -193,10 +187,7 @@ INFO: 2 processes: 1 internal, 1 darwin-sandbox.
 INFO: Build completed successfully, 2 total actions
 {
   "ci": true,
-  "counter": [
-    "678",
-    "0"
-  ],
+  "counter": "678",
   "deps": {
     "abseil-cpp": "20240116.1",
     "aspect_bazel_lib": "2.19.4",

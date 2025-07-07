@@ -29,22 +29,22 @@ def _build_counter(repository_ctx):
     This allows estimation of rate of builds.
     """
 
-    for big_var, small_var in [
-        ("BUILDKITE_BUILD_NUMBER", None),               # Buildkite
-        ("GITHUB_RUN_NUMBER", "GITHUB_ATTEMPT_NUMBER"), # Github/forgejo/gitea
-        ("CI_PIPELINE_IID", None),                      # Gitlab
-        ("CIRCLE_BUILD_NUM", None),                     # CircleCI
-        ("DRONE_BUILD_NUMBER", None),                   # Drone
-        ("BUILD_NUMBER", None),                         # Jenkins
-        ("CI_PIPELINE_NUMBER", None),                   # Woodpecker?
-        ("TRAVIS_BUILD_NUMBER", None),                  # Travis
+    # Note that on GHA run numbers may be reused and there's a retry count
+    # subcounter. Since that's the only platform to do so, we're going to just
+    # pretend it doesn't exist.
+    for counter_var in [
+        "BUILDKITE_BUILD_NUMBER",  # Buildkite
+        "GITHUB_RUN_NUMBER",       # Github/forgejo/gitea
+        "CI_PIPELINE_IID",         # Gitlab
+        "CIRCLE_BUILD_NUM",        # CircleCI
+        "DRONE_BUILD_NUMBER",      # Drone
+        "BUILD_NUMBER",            # Jenkins
+        "CI_PIPELINE_NUMBER",      # Woodpecker?
+        "TRAVIS_BUILD_NUMBER",     # Travis
     ]:
-        big = repository_ctx.getenv(big_var)
-        small = "0"
-        if small_var:
-            small = repository_ctx.getenv(small_var)
-        if big != None:
-            return [big, small]
+        counter = repository_ctx.getenv(counter_var)
+        if counter:
+            return counter
 
 TELEMETRY_REGISTRY["counter"] = _build_counter
 
