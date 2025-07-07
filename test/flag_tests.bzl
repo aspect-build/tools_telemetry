@@ -16,6 +16,6 @@ parse_opt_out_test = unittest.make(_parse_opt_out_test)
 
 def test_suite():
   unittest.suite(
-      "test_suite",
+      "flag_suite",
       parse_opt_out_test,
   )

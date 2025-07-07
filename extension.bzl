@@ -1,5 +1,5 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//:xorshift.bzl", hash="xorshift")
+load("//:sha1.bzl", hash="sha1")
 
 """
 Telemtry bound for Aspect.
