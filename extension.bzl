@@ -136,6 +136,48 @@ def _repo_org(repository_ctx):
 
 TELEMETRY_REGISTRY["org"] = _repo_org
 
+def _repo_user(repository_ctx):
+    """Try to extract (hash) of the user who initiated a change.
+
+    """
+
+    user = None
+    for var in [
+        "BUILDKITE_BUILD_AUTHOR_EMAIL", # Buildkite
+        "GITHUB_ACTOR",                 # GH/Gitea/Forgejo
+        "GITLAB_USER_EMAIL",            # GL
+        "CIRCLE_USERNAME",              # Circle
+        # TODO: Jenkins
+        "DRONE_COMMIT_AUTHOR",          # Drone
+        "DRONE_COMMIT_AUTHOR_EMAIL",    # Drone
+        "CI_COMMIT_AUTHOR",             # Woodpecker
+        "CI_COMMIT_AUTHOR_EMAIL",       # Woodpecker
+        # TODO: Travis
+        "USER",                         # Generic unix
+    ]:
+        user = repository_ctx.getenv(var)
+        if user:
+            break
+
+    if user:
+        # If the author is a GH user email, strip the user ID leader
+        # Ex. 29139614+renovate[bot]@users.noreply.github.com
+        if user.find("users.noreply.github.com") != -1:
+            user = user[user.find("+")+1:]
+
+        # Strip a domain name suffix if one exists; eg. email names
+        at = user.find("@")
+        if at != -1:
+            user = user[:at]
+
+        # Ditch the GHA [bot] annotation
+        user = user.replace("[bot]", "")
+
+        # FIXME: Use a better hashcode?
+        return hex(hash(user))[3:]
+
+TELEMETRY_REGISTRY["user"] = _repo_user
+
 def _repo_bzlmod(repository_ctx):
     """Extract the installed Aspect libraries and versions.
 

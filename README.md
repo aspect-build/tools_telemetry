@@ -52,6 +52,7 @@ We suggest setting one of these options in your `.bazelrc`
 ## Reporting features
 
 - `id`: A hash of the repo is used as a stable pseudononymous ID
+- `user`: A hash of the commit author or build user's name
 - `ci`: Is the build occurring in CI/CD or locally
 - `runner`: The CI/CD system being used if any
 - `counter`: The build counter if available
@@ -97,9 +98,10 @@ We suggest setting one of these options in your `.bazelrc`
     "yq.bzl": "0.1.1",
     "zlib": "1.3.1.bcr.5"
   },
-  "id": "x32faf8f6",
+  "id": "32faf8f6",
   "runner": "jenkins",
   "org": "aspect-build",
+  "user": "53fe1df5"
 }
 ```
 
@@ -172,7 +174,8 @@ INFO: Build completed successfully, 2 total actions
   },
   "id": "32faf8f6",
   "org": null,
-  "runner": "drone"
+  "runner": "drone",
+  "user": "53fe1df5"
 }%
 
 # Enabled behavior
@@ -227,6 +230,7 @@ INFO: Build completed successfully, 2 total actions
   "id": "32faf8f6",
   "runner": "drone"
   "org": null,
+  "user": "53fe1df5"
 }%
 
 # Disabled behavior
