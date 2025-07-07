@@ -290,13 +290,12 @@ exports_files(["report.json", "defs.bzl"], visibility = ["//visibility:public"])
     if curl and endpoint and allowed_telemetry:
         # Note that errors are silent, no attempt is made at caching/slabbing
         repository_ctx.execute([
-          curl, "--quiet",
-                "--max-time", "1",
+          curl, "--max-time", "1",
                 "--connect-timeout", "0.5",
                 "--request", "POST",
                 "--header", "Content-Type:application/json",
                 "--data", "@report.json",
-                TELEMETRY_DEST],
+                endpoint],
           timeout=2
         )
 
