@@ -326,18 +326,6 @@ def _tel_repository_impl(repository_ctx):
     elif tel_val:
         allowed_val = tel_val
     else:
-        print("""
-\033[36maspect_tools_telemetry\033[0m is loaded but not configured.
-
-Telemetry reporting is enabled by default.
-
-To accept telemetry and silence this warning, add this entry to your .bazelrc
-    common --repo_env=ASPECT_TOOLS_TELEMETRY=all
-
-For more details and configuration options please see
-    \033[36m\033[4mhttps://github.com/aspect-build/tools_telemetry\033[0m
-
-""")
         allowed_val = "all"
 
     allowed_telemetry = parse_opt_out(allowed_val or "all", TELEMETRY_FEATURES)
