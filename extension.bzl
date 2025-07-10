@@ -70,6 +70,16 @@ def _bazel_version(repository_ctx):
 
 TELEMETRY_REGISTRY["bazel_version"] = _bazel_version
 
+def _os(repository_ctx):
+    return repository_ctx.os.name
+
+TELEMETRY_REGISTRY["os"] = _os
+
+def _arch(repository_ctx):
+    return repository_ctx.os.arch
+
+TELEMETRY_REGISTRY["arch"] = _arch
+
 def _build_counter(repository_ctx):
     """Try to get a counter for the build.
 
