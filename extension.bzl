@@ -17,11 +17,58 @@ as @aspect_telemetry_report//:report.json
 TELEMETRY_REGISTRY = {}
 
 def _is_ci(repository_ctx):
-    """Detect if the build is hppening in 'CI'. Pretty much all the vendors set this."""
+    """Detect if the build is happening in 'CI'. Pretty much all the vendors set this."""
 
     return repository_ctx.getenv("CI") != None
 
 TELEMETRY_REGISTRY["ci"] = _is_ci
+
+def _is_bazelisk(repository_ctx):
+    """Detect if the build is using bazelisk; this persists into the repo env state."""
+
+    return repository_ctx.getenv("BAZELISK") != None or repository_ctx.getenv("BAZELISK_SKIP_WRAPPER") != None
+
+TELEMETRY_REGISTRY["bazelisk"] = _is_bazelisk
+
+def _shell(repository_ctx):
+    """Detect the shell."""
+
+    return repository_ctx.getenv("SHELL")
+
+TELEMETRY_REGISTRY["shell"] = _shell
+
+def _has_tools_bazel(repository_ctx):
+    """Detect if the repository has a tools/bazel wrapper script."""
+
+    return repository_ctx.path(paths.join(str(repository_ctx.workspace_root), "tools/bazel")).exists
+
+TELEMETRY_REGISTRY["has_bazel_tool"] = _has_tools_bazel
+
+def _has_bazel_prelude(repository_ctx):
+    """Detect if the repository has a //tools/build_rules/prelude_bazel."""
+
+    return repository_ctx.path(paths.join(str(repository_ctx.workspace_root), "tools/build_rules/prelude_bazel")).exists
+
+TELEMETRY_REGISTRY["has_bazel_prelude"] = _has_bazel_prelude
+
+def _has_workspace(repository_ctx):
+    """Detect if the repository has a WORKSPACE file."""
+
+    return repository_ctx.path(paths.join(str(repository_ctx.workspace_root), "WORKSPACE")).exists or repository_ctx.path(paths.join(str(repository_ctx.workspace_root), "WORKSPACE.bazel")).exists
+
+TELEMETRY_REGISTRY["has_bazel_workspace"] = _has_workspace
+
+def _has_module(repository_ctx):
+    """Detect if the repository has a MODULE.bazel file."""
+
+    return repository_ctx.path(paths.join(str(repository_ctx.workspace_root), "MODULE.bazel")).exists
+
+TELEMETRY_REGISTRY["has_bazel_module"] = _has_module
+
+def _bazel_version(repository_ctx):
+    return native.bazel_version
+
+TELEMETRY_REGISTRY["bazel_version"] = _bazel_version
 
 def _build_counter(repository_ctx):
     """Try to get a counter for the build.
@@ -96,6 +143,10 @@ def _repo_id(repository_ctx):
         if repo:
             break
 
+    # FIXME: Need a better fallback strategy. Under bzlmod there's no clear path
+    # to getting the name of the root module. Many CI systems (and likely most
+    # users) will clone a project to a named directory (eg. GHA uses
+    # /work/<org>/<repo> iirc) but some just clone to generic /work dirs. A stable identifier could be the
     if not repo:
         repo = repository_ctx.workspace_root.basename
 
@@ -137,7 +188,10 @@ def _repo_org(repository_ctx):
 TELEMETRY_REGISTRY["org"] = _repo_org
 
 def _repo_user(repository_ctx):
-    """Try to extract (hash) of the user who initiated a change.
+    """Try to extract a fingerprint for the user who initiated the build.
+
+    Note that we salt the user IDs with the identified org name to prevent
+    correllation across orgs.
 
     """
 
@@ -153,6 +207,7 @@ def _repo_user(repository_ctx):
         "CI_COMMIT_AUTHOR",             # Woodpecker
         "CI_COMMIT_AUTHOR_EMAIL",       # Woodpecker
         # TODO: Travis
+        "LOGNAME",                      # Generic unix
         "USER",                         # Generic unix
     ]:
         user = repository_ctx.getenv(var)
@@ -160,21 +215,7 @@ def _repo_user(repository_ctx):
             break
 
     if user:
-        # If the author is a GH user email, strip the user ID leader
-        # Ex. 29139614+renovate[bot]@users.noreply.github.com
-        if user.find("users.noreply.github.com") != -1:
-            user = user[user.find("+")+1:]
-
-        # Strip a domain name suffix if one exists; eg. email names
-        at = user.find("@")
-        if at != -1:
-            user = user[:at]
-
-        # Ditch the GHA [bot] annotation
-        user = user.replace("[bot]", "")
-
-        # FIXME: Use a better hashcode?
-        return hash(user)
+        return hash(str(_repo_org(repository_ctx)) + ";" + user)
 
 TELEMETRY_REGISTRY["user"] = _repo_user
 
@@ -343,22 +384,14 @@ exports_files(["report.json", "defs.bzl"], visibility = ["//visibility:public"])
 
 
 tel_repository = repository_rule(
-  implementation = _tel_repository_impl,
-  attrs = {
-     "install_reports": attr.string_dict(
-       doc = "Mapping of ruleset to version",
-     ),
-  },
+    implementation = _tel_repository_impl,
+    attrs = {},
 )
 
 
 def _tel_impl(module_ctx):
     tel_repository(
         name = "aspect_tools_telemetry_report",
-        install_reports = {
-            report.name: report.version
-            for report in module_ctx.modules
-        },
     )
 
 # TODO: Should the extension in the main module be able to set telemetry feature
