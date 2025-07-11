@@ -346,6 +346,10 @@ def _tel_repository_impl(repository_ctx):
         if feature in allowed_telemetry:
             telemetry[feature] = handler(repository_ctx)
 
+    ## Wrap it up in the tools_telemetry envelope
+    if telemetry:
+        telemetry = {"tools_telemetry": telemetry}
+
     ## Lay down report files
     telemetry_file = repository_ctx.file(
         "report.json",
