@@ -146,6 +146,6 @@ For transparency reports are persisted into the Bazel configuration and can be i
 
 ## Privacy policy
 
-Data collected by this telemetry package is reported to Aspec and governed under our privacy policy.
+Data collected by this telemetry package is reported to Aspect Build Systems Inc. and governed under our privacy policy.
 
 For more please see https://www.aspect.build/privacy-policy
