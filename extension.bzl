@@ -132,46 +132,17 @@ TELEMETRY_REGISTRY["runner"] = _build_runner
 
 def _repo_id(repository_ctx):
     """Try to extract an aggregation ID (hash) from the repo context.
-
-    If there's a well known repo URL, strip user details from that and use it.
-    Otherwise use the name of the repo directory.
     """
 
-    repo = None
-    for var in [
-        "BUILDKITE_REPO",        # Buildkite
-        "GITHUB_REPOSITORY",     # GH/Gitea/Forgejo
-        "CI_REPOSITORY_URL",     # GL
-        "CIRCLE_REPOSITORY_URL", # CircleCI
-        "GIT_URL",               # Jenkins
-        "GIT_URL_1",             # Jenkins
-        "DRONE_REPO_LINK",       # Drone
-        "CI_REPO",               # Woodpecker
-        "TRAVIS_REPO_SLUG",      # Travis
-    ]:
-        repo = repository_ctx.getenv(var)
-        if repo:
-            break
+    module_path = repository_ctx.path(paths.join(str(repository_ctx.workspace_root), "MODULE.bazel"))
+    module_content = repository_ctx.read(module_path)
 
-    # FIXME: Need a better fallback strategy. Under bzlmod there's no clear path
-    # to getting the name of the root module. Many CI systems (and likely most
-    # users) will clone a project to a named directory (eg. GHA uses
-    # /work/<org>/<repo> iirc) but some just clone to generic /work dirs. A stable identifier could be the
-    if not repo:
-        repo = repository_ctx.workspace_root.basename
-
-    # Could have a user:secret@ prefix; strip that
-    at = repo.find("@")
-    if at != -1:
-        repo = repo[at+1:]
-
-    # Could have a ?secret= suffix; strip that
-    qmark = repo.find("?")
-    if qmark != -1:
-        repo = repo[:qmark]
-
-    # FIXME: Use a better hashcode?
-    return hash(repo)
+    # Garbage shotgun parser for grabbing the module() block
+    # Search forwards to skip any comments or docstrings or what have you
+    start = module_content.find("module(")
+    # And search forwards from that to find the close
+    end = start + module_content[start:].find(")")
+    return hash(module_content[start:end])
 
 TELEMETRY_REGISTRY["id"] = _repo_id
 
