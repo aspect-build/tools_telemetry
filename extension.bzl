@@ -230,27 +230,7 @@ def _repo_user(repository_ctx):
 TELEMETRY_REGISTRY["user"] = _repo_user
 
 def _repo_bzlmod(repository_ctx):
-    """Extract the installed Aspect libraries and versions.
-
-    Note that in order to protect the privacy of internal modules and internal
-    registries we only look at BCR sourced stuff.
-    """
-
-    lockfile_path = repository_ctx.path(paths.join(str(repository_ctx.workspace_root), "MODULE.bazel.lock"))
-    # Since this is a bzlmod-only telemetry package this should always hold but to be safe
-    if lockfile_path.exists:
-        # The lockfile's registry file hashes contain a few things:
-        # - The `bazel_registry.json` (if any) from the registry
-        # - A `MODULE.bazel` for every module version considered during resolution
-        # - A `source.json` for the _selected_ version
-        #
-        # Since we're trying to collect the selected dep versions, we can just
-        # look for the source lists.
-        source_json = "/source.json"
-        bcr = "https://bcr.bazel.build/modules/"
-        lockfile_content = json.decode(repository_ctx.read(lockfile_path))
-        selected_module_source_urls = [it for it in lockfile_content["registryFileHashes"].keys() if it.endswith(source_json) and it.startswith(bcr)]
-        return dict([it[len(bcr):][:0-len(source_json)].split("/") for it in selected_module_source_urls])
+    return repository_ctx.attr.deps
 
 TELEMETRY_REGISTRY["deps"] = _repo_bzlmod
 
@@ -387,13 +367,16 @@ exports_files(["report.json", "defs.bzl"], visibility = ["//visibility:public"])
 
 tel_repository = repository_rule(
     implementation = _tel_repository_impl,
-    attrs = {},
+    attrs = {
+        "deps": attr.string_dict(),
+    },
 )
 
 
 def _tel_impl(module_ctx):
     tel_repository(
         name = "aspect_tools_telemetry_report",
+        deps = {it.name: it.version for it in module_ctx.modules}
     )
 
 # TODO: Should the extension in the main module be able to set telemetry feature
