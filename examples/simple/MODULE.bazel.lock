@@ -155,7 +155,7 @@
   "moduleExtensions": {
     "@@aspect_tools_telemetry+//:extension.bzl%telemetry": {
       "general": {
-        "bzlTransitiveDigest": "whoseEOA+mFeZZ50SraDCawfJTFgQ7+4HEavkC2nyqU=",
+        "bzlTransitiveDigest": "JJ6ghUH8zOVBZxU4K5zX1COWRvLz14HcsVYA4buTE9M=",
         "usagesDigest": "Hw1RmkqUoOCGr84h0munD3pk5WGitRzn+3mGpmwFe2c=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -163,7 +163,12 @@
         "generatedRepoSpecs": {
           "aspect_tools_telemetry_report": {
             "repoRuleId": "@@aspect_tools_telemetry+//:extension.bzl%tel_repository",
-            "attributes": {}
+            "attributes": {
+              "deps": {
+                "simple-example": "0.0.0",
+                "aspect_tools_telemetry": "0.0.0"
+              }
+            }
           }
         },
         "recordedRepoMappingEntries": [

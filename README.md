@@ -38,7 +38,7 @@ The telemetry module can be controlled at a finer granularity with the `$ASPECT_
 - `bazelisk`: Is the `bazelisk` tool is being used
 - `ci`: Is the build occurring in CI/CD or locally
 - `counter`: The build counter if available
-- `deps`: The active set of bzlmod modules from the public registry
+- `deps`: The active set of bzlmod modules which have opted into telemetry
 - `has_bazel_module`: Is a `MODULE.bazel` being used
 - `has_bazel_prelude`: Does the project use a `prelude_bazel`
 - `has_bazel_tool`: Does the project use a `tools/bazel` script
@@ -77,34 +77,8 @@ INFO: Build completed successfully, 2 total actions
    "ci": true,
    "counter": "678",
    "deps": {
-     "abseil-cpp": "20240116.1",
-     "aspect_bazel_lib": "2.19.4",
-     "bazel_features": "1.30.0",
-     "bazel_skylib": "1.8.0",
-     "buildozer": "7.1.2",
-     "googletest": "1.14.0.bcr.1",
-     "jq.bzl": "0.1.0",
-     "jsoncpp": "1.9.5",
-     "package_metadata": "0.0.2",
-     "platforms": "0.0.11",
-     "protobuf": "29.0",
-     "pybind11_bazel": "2.11.1",
-     "re2": "2023-09-01",
-     "rules_android": "0.1.1",
-     "rules_cc": "0.1.1",
-     "rules_fuzzing": "0.5.2",
-     "rules_java": "8.12.0",
-     "rules_jvm_external": "6.3",
-     "rules_kotlin": "1.9.6",
-     "rules_license": "1.0.0",
-     "rules_pkg": "1.0.1",
-     "rules_proto": "7.0.2",
-     "rules_python": "0.40.0",
-     "rules_shell": "0.4.1",
-     "stardoc": "0.7.1",
-     "tar.bzl": "0.2.1",
-     "yq.bzl": "0.1.1",
-     "zlib": "1.3.1.bcr.5"
+      "aspect_tools_telemetry": "0.0.0",
+      "simple-example": "0.0.0"
    },
    "has_bazel_module": true,
    "has_bazel_prelude": false,
@@ -114,8 +88,7 @@ INFO: Build completed successfully, 2 total actions
    "org": null,
    "os": "mac os x",
    "runner": "drone",
-     "user": "94fb5cf79f8322bd3f999a10eb713f478470979c"
-   }
+   "user": "94fb5cf79f8322bd3f999a10eb713f478470979c"
 }%
 
 # Disabled behavior
