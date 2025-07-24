@@ -19,21 +19,21 @@ TELEMETRY_REGISTRY = {}
 def _is_ci(repository_ctx):
     """Detect if the build is happening in 'CI'. Pretty much all the vendors set this."""
 
-    return repository_ctx.getenv("CI") != None
+    return repository_ctx.os.environ.get("CI") != None
 
 TELEMETRY_REGISTRY["ci"] = _is_ci
 
 def _is_bazelisk(repository_ctx):
     """Detect if the build is using bazelisk; this persists into the repo env state."""
 
-    return repository_ctx.getenv("BAZELISK") != None or repository_ctx.getenv("BAZELISK_SKIP_WRAPPER") != None
+    return repository_ctx.os.environ.get("BAZELISK") != None or repository_ctx.os.environ.get("BAZELISK_SKIP_WRAPPER") != None
 
 TELEMETRY_REGISTRY["bazelisk"] = _is_bazelisk
 
 def _shell(repository_ctx):
     """Detect the shell."""
 
-    return repository_ctx.getenv("SHELL")
+    return repository_ctx.os.environ.get("SHELL")
 
 TELEMETRY_REGISTRY["shell"] = _shell
 
@@ -99,7 +99,7 @@ def _build_counter(repository_ctx):
         "CI_PIPELINE_NUMBER",      # Woodpecker?
         "TRAVIS_BUILD_NUMBER",     # Travis
     ]:
-        counter = repository_ctx.getenv(counter_var)
+        counter = repository_ctx.os.environ.get(counter_var)
         if counter:
             return counter
 
@@ -120,12 +120,12 @@ def _build_runner(repository_ctx):
         ("BUILD_NUMBER", "jenkins"),
         ("TRAVIS", "travis")
     ]:
-        val = repository_ctx.getenv(var)
+        val = repository_ctx.os.environ.get(var)
         if val != None:
             return platform
 
     # Set on Woodpecker and in some other environments
-    return repository_ctx.getenv("CI_SYSTEM_NAME")
+    return repository_ctx.os.environ.get("CI_SYSTEM_NAME")
 
 TELEMETRY_REGISTRY["runner"] = _build_runner
 
@@ -149,7 +149,7 @@ def _repo_id(repository_ctx):
         "CI_REPO",               # Woodpecker
         "TRAVIS_REPO_SLUG",      # Travis
     ]:
-        repo = repository_ctx.getenv(var)
+        repo = repository_ctx.os.environ.get(var)
         if repo:
             break
 
@@ -191,7 +191,7 @@ def _repo_org(repository_ctx):
         "CI_REPO_OWNER",               # Woodpecker
         "TRAVIS_REPO_SLUG",            # Travis
     ]:
-        repo = repository_ctx.getenv(var)
+        repo = repository_ctx.os.environ.get(var)
         if repo:
             return repo
 
@@ -220,7 +220,7 @@ def _repo_user(repository_ctx):
         "LOGNAME",                      # Generic unix
         "USER",                         # Generic unix
     ]:
-        user = repository_ctx.getenv(var)
+        user = repository_ctx.os.environ.get(var)
         if user:
             break
 
@@ -302,16 +302,16 @@ def _tel_repository_impl(repository_ctx):
 
     ## Figure out where we scribe to
     # Note that this allows the endpoint to be overriden
-    endpoint = repository_ctx.getenv(TELEMETRY_DEST_VAR)
+    endpoint = repository_ctx.os.environ.get(TELEMETRY_DEST_VAR)
     if endpoint == None:
         endpoint = TELEMETRY_DEST
 
     ## Parse the feature flagging var
-    tel_val = repository_ctx.getenv(TELEMETRY_ENV_VAR)
+    tel_val = repository_ctx.os.environ.get(TELEMETRY_ENV_VAR)
 
     allowed_val = None
 
-    if repository_ctx.getenv("DO_NOT_TRACK"):
+    if repository_ctx.os.environ.get("DO_NOT_TRACK"):
         allowed_val = "-all"
     elif tel_val:
         allowed_val = tel_val
