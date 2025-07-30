@@ -1,5 +1,5 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//:sha1.bzl", hash="sha1")
+load("//:sha1.bzl", sha1="sha1")
 
 """
 Telemtry bound for Aspect.
@@ -13,6 +13,15 @@ These metrics are designed to tell us at a coarse grain:
 For transparency the report data we submit is persisted
 as @aspect_telemetry_report//:report.json
 """
+
+def hash(repository_ctx, data, fn=sha1):
+    """Hash, honoring a salt value from the environment."""
+
+    salt = repository_ctx.os.environ.get("ASPECT_TOOLS_TELEMETRY_SALT")
+    if salt:
+        data = salt + ";" + data
+    return fn(data)
+
 
 TELEMETRY_REGISTRY = {}
 
@@ -106,9 +115,8 @@ def _build_counter(repository_ctx):
 TELEMETRY_REGISTRY["counter"] = _build_counter
 
 def _build_runner(repository_ctx):
-    """Try to identify the runner environment.
+    """Try to identify the CI/CD runner environment."""
 
-    """
     for var, platform in [
         ("BUILDKITE_BUILD_NUMBER", "buildkite"),
         ("FORGEJO_TOKEN", "forgejo"),  # FIXME: This value is a secret, avoid
@@ -131,9 +139,7 @@ TELEMETRY_REGISTRY["runner"] = _build_runner
 
 
 def _repo_org(repository_ctx):
-    """Try to extract the organization name.
-
-    """
+    """Try to extract the organization name."""
 
     repo = None
     for var in [
@@ -154,15 +160,15 @@ TELEMETRY_REGISTRY["org"] = _repo_org
 
 
 def _repo_id(repository_ctx):
-    """Try to extract an aggregation ID (hash) from the repo context.
+    """Try to extract an aggregation ID from the repo context.
 
     Ideally we want to use the first few (usually stable!) lines from a highly
     stable file such as the README. This will provide a consistent aggregation
     ID regardless of whether a project is checked out locally or remotely.
 
-    Note that the project ID doesn't depend on the org name, since the org name
+    Note that the repo ID doesn't depend on the org name, since the org name
     cannot be determined on workstations but we do want to count CI vs
-    workstation builds for a single project consistently.
+    workstation builds for a single repo consistently.
 
     """
 
@@ -195,7 +201,7 @@ def _repo_id(repository_ctx):
     if not readme_file:
         readme_file = repository_ctx.path(paths.join(str(repository_ctx.workspace_root), "MODULE.bazel"))
 
-    return hash("\n".join(repository_ctx.read(readme_file).split("\n")[:4]))
+    return hash(repository_ctx, "\n".join(repository_ctx.read(readme_file).split("\n")[:4]))
 
 TELEMETRY_REGISTRY["id"] = _repo_id
 
@@ -228,7 +234,7 @@ def _repo_user(repository_ctx):
             break
 
     if user:
-        return hash(str(_repo_id(repository_ctx)) + ";" + user)
+        return hash(repository_ctx, str(_repo_id(repository_ctx)) + ";" + user)
 
 TELEMETRY_REGISTRY["user"] = _repo_user
 

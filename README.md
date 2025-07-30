@@ -20,9 +20,17 @@ The telemetry module honors `$DO_NOT_TRACK` and will disable itself if this vari
 The telemetry module can be controlled at a finer granularity with the `$ASPECT_TOOLS_TELEMETRY` environment variable.
 `$ASPECT_TOOLS_TELEMETRY` is a comma joined list of reporting features using Bazel's set notation.
 
+Some of the collector features can be overridden or salted for further privacy if so desired.
+
+- `$ASPECT_TOOLS_TELEMETRY_SALT` is a value which will be included whenever computing a hash or ID.
+  This allows you to salt correlation IDs if you so choose.
+
 ### Example configurations
 
 ``` shell
+# Since sha1 is a vulnerable hash we recommend providing a salt value
+--repo_env=ASPECT_TOOLS_TELEMETRY_SALT=$(head -c 32 /dev/random | base64)
+
 --repo_env=ASPECT_TOOLS_TELEMETRY=all  # enabled (default)
 --repo_env=ASPECT_TOOLS_TELEMETRY=deps # only report aspect deps
 
@@ -30,6 +38,8 @@ The telemetry module can be controlled at a finer granularity with the `$ASPECT_
 --repo_env=ASPECT_TOOLS_TELEMETRY=-all # also disabled
 --repo_env=ASPECT_TOOLS_TELEMETRY=-org # just disable org name reporting
 ```
+
+Note that the `common` directive can be used in your `.bazelrc` to codify any of these settings as project defaults.
 
 ## Reporting features
 
