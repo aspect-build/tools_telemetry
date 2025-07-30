@@ -190,7 +190,7 @@ def _repo_id(repository_ctx):
             break
 
     if readme_file:
-        return hash("\n".join(repository_ctx.read(readme_file).split("\n")[:6]))
+        return hash("\n".join(repository_ctx.read(readme_file).split("\n")[:4]))
 
 TELEMETRY_REGISTRY["id"] = _repo_id
 
