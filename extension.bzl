@@ -181,7 +181,7 @@ def _repo_id(repository_ctx):
             dir = paths.join(dir, suffix)
         dir = repository_ctx.path(dir)
         if dir.exists and dir.is_dir:
-            for entry in dir.listdir():
+            for entry in dir.readdir():
                 if entry.basename.lower().find("readme") != -1:
                     readme_file = entry
                     break
