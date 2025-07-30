@@ -169,6 +169,8 @@ def _repo_id(repository_ctx):
     readme_file = None
     for suffix in [
         "",
+        # Github allows the README to be squirreled away, so we may need to
+        # check subdirs. Assume that gitlab et all allow the same.
         "doc",
         "docs",
         ".github",
@@ -178,7 +180,7 @@ def _repo_id(repository_ctx):
     ]:
         dir = repository_ctx.workspace_root
         if suffix:
-            dir = paths.join(dir, suffix)
+            dir = paths.join(str(dir), suffix)
         dir = repository_ctx.path(dir)
         if dir.exists and dir.is_dir:
             for entry in dir.readdir():
@@ -189,8 +191,11 @@ def _repo_id(repository_ctx):
         if readme_file:
             break
 
-    if readme_file:
-        return hash("\n".join(repository_ctx.read(readme_file).split("\n")[:4]))
+    # As a fallback use the top of the MODULE.bazel file
+    if not readme_file:
+        readme_file = repository_ctx.path(paths.join(str(repository_ctx.workspace_root), "MODULE.bazel"))
+
+    return hash("\n".join(repository_ctx.read(readme_file).split("\n")[:4]))
 
 TELEMETRY_REGISTRY["id"] = _repo_id
 
