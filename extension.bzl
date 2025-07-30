@@ -130,51 +130,6 @@ def _build_runner(repository_ctx):
 TELEMETRY_REGISTRY["runner"] = _build_runner
 
 
-def _repo_id(repository_ctx):
-    """Try to extract an aggregation ID (hash) from the repo context.
-
-    If there's a well known repo URL, strip user details from that and use it.
-    Otherwise use the name of the repo directory.
-    """
-
-    repo = None
-    for var in [
-        "BUILDKITE_REPO",        # Buildkite
-        "GITHUB_REPOSITORY",     # GH/Gitea/Forgejo
-        "CI_REPOSITORY_URL",     # GL
-        "CIRCLE_REPOSITORY_URL", # CircleCI
-        "GIT_URL",               # Jenkins
-        "GIT_URL_1",             # Jenkins
-        "DRONE_REPO_LINK",       # Drone
-        "CI_REPO",               # Woodpecker
-        "TRAVIS_REPO_SLUG",      # Travis
-    ]:
-        repo = repository_ctx.os.environ.get(var)
-        if repo:
-            break
-
-    # FIXME: Need a better fallback strategy. Under bzlmod there's no clear path
-    # to getting the name of the root module. Many CI systems (and likely most
-    # users) will clone a project to a named directory (eg. GHA uses
-    # /work/<org>/<repo> iirc) but some just clone to generic /work dirs. A stable identifier could be the
-    if not repo:
-        repo = repository_ctx.workspace_root.basename
-
-    # Could have a user:secret@ prefix; strip that
-    at = repo.find("@")
-    if at != -1:
-        repo = repo[at+1:]
-
-    # Could have a ?secret= suffix; strip that
-    qmark = repo.find("?")
-    if qmark != -1:
-        repo = repo[:qmark]
-
-    # FIXME: Use a better hashcode?
-    return hash(repo)
-
-TELEMETRY_REGISTRY["id"] = _repo_id
-
 def _repo_org(repository_ctx):
     """Try to extract the organization name.
 
@@ -197,11 +152,54 @@ def _repo_org(repository_ctx):
 
 TELEMETRY_REGISTRY["org"] = _repo_org
 
+
+def _repo_id(repository_ctx):
+    """Try to extract an aggregation ID (hash) from the repo context.
+
+    Ideally we want to use the first few (usually stable!) lines from a highly
+    stable file such as the README. This will provide a consistent aggregation
+    ID regardless of whether a project is checked out locally or remotely.
+
+    Note that the project ID doesn't depend on the org name, since the org name
+    cannot be determined on workstations but we do want to count CI vs
+    workstation builds for a single project consistently.
+
+    """
+
+    readme_file = None
+    for suffix in [
+        "",
+        "doc",
+        "docs",
+        ".github",
+        ".gitlab",
+        ".gitea",
+        ".forgejo",
+    ]:
+        dir = repository_ctx.workspace_root
+        if suffix:
+            dir = paths.join(dir, suffix)
+        dir = repository_ctx.path(dir)
+        if dir.exists() and dir.is_dir():
+            for entry in dir.listdir():
+                if entry.basename.lower().find("readme") != -1:
+                    readme_file = entry
+                    break
+
+        if readme_file:
+            break
+
+    if readme_file:
+        return hash("\n".join(repository_ctx.read(readme_file).split("\n")[:6]))
+
+TELEMETRY_REGISTRY["id"] = _repo_id
+
+
 def _repo_user(repository_ctx):
     """Try to extract a fingerprint for the user who initiated the build.
 
-    Note that we salt the user IDs with the identified org name to prevent
-    correllation across orgs.
+    Note that we salt the user IDs with the identified project ID to prevent
+    correllation.
 
     """
 
@@ -225,9 +223,10 @@ def _repo_user(repository_ctx):
             break
 
     if user:
-        return hash(str(_repo_org(repository_ctx)) + ";" + user)
+        return hash(str(_repo_id(repository_ctx)) + ";" + user)
 
 TELEMETRY_REGISTRY["user"] = _repo_user
+
 
 def _repo_bzlmod(repository_ctx):
     return repository_ctx.attr.deps
