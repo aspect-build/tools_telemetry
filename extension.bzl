@@ -241,7 +241,7 @@ TELEMETRY_REGISTRY["deps"] = _repo_bzlmod
 
 TELEMETRY_ENV_VAR = "ASPECT_TOOLS_TELEMETRY"
 TELEMETRY_DEST_VAR = "ASPECT_TOOLS_TELEMETRY_ENDPOINT"
-TELEMETRY_DEST = "https://telemetry.aspect.build/ingest"
+TELEMETRY_DEST = "https://telemetry.aspect.build/ingest?source=tools_telemetry"
 TELEMETRY_FEATURES = list(TELEMETRY_REGISTRY.keys())
 
 
@@ -359,7 +359,8 @@ exports_files(["report.json", "defs.bzl"], visibility = ["//visibility:public"])
     if curl and endpoint and allowed_telemetry:
         # Note that errors are silent, no attempt is made at caching/slabbing
         repository_ctx.execute([
-          curl, "--max-time", "1",
+          curl, "--location",
+                "--max-time", "1",
                 "--connect-timeout", "0.5",
                 "--request", "POST",
                 "--header", "Content-Type:application/json",
