@@ -1,14 +1,17 @@
 load("@bazel_skylib//lib:unittest.bzl", "unittest", "asserts")
-load("//:extension.bzl", "parse_opt_out", "TELEMETRY_FEATURES")
+load("//:extension.bzl", "parse_opt_out")
 
 def _parse_opt_out_test(ctx):
   env = unittest.begin(ctx)
 
-  asserts.equals(env, TELEMETRY_FEATURES, parse_opt_out("all", TELEMETRY_FEATURES), "all should mean all")
-  asserts.equals(env, TELEMETRY_FEATURES, parse_opt_out("", TELEMETRY_FEATURES), "empty string is also all")
-  asserts.equals(env, [], parse_opt_out("-all", TELEMETRY_FEATURES), "-all disables all features")
-  asserts.equals(env, ["id"], parse_opt_out("id", TELEMETRY_FEATURES), "An unqualified term masks defaults")
-  asserts.equals(env, [], parse_opt_out("all,+all,-all", TELEMETRY_FEATURES), "Removals win")
+  features = ["id", "user", "shell"]
+  groups = {"all": features}
+
+  asserts.equals(env, features, parse_opt_out("all", features, groups), "all should mean all")
+  asserts.equals(env, features, parse_opt_out("", features, groups), "empty string is also all")
+  asserts.equals(env, [], parse_opt_out("-all", features, groups), "-all disables all features")
+  asserts.equals(env, ["id"], parse_opt_out("id", features, groups), "An unqualified term masks defaults")
+  asserts.equals(env, [], parse_opt_out("all,+all,-all", features, groups), "Removals win")
 
   return unittest.end(env)
 
