@@ -6,7 +6,6 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load(":utils.bzl", "hash")
 
 
-
 def _repo_id(repository_ctx):
     """Try to extract an aggregation ID from the repo context.
 
