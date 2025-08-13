@@ -247,7 +247,7 @@ TELEMETRY_REGISTRY["deps"] = _repo_bzlmod
 
 TELEMETRY_ENV_VAR = "ASPECT_TOOLS_TELEMETRY"
 TELEMETRY_DEST_VAR = "ASPECT_TOOLS_TELEMETRY_ENDPOINT"
-TELEMETRY_DEST = "https://telemetry.aspect.build/ingest?source=tools_telemetry"
+TELEMETRY_DEST = "https://telemetry2.aspect.build/ingest?source=tools_telemetry"
 TELEMETRY_FEATURES = list(TELEMETRY_REGISTRY.keys())
 
 
