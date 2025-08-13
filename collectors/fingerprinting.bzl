@@ -64,7 +64,7 @@ def _repo_id(repository_ctx):
                     dir = paths.join(str(dir), prefix)
                 file = repository_ctx.path(paths.join(str(dir), base + ext))
                 if file.exists:
-                    readme_file = "{}{}".format((prefix + "/" if prefix else ""), base + ext)
+                    readme_file = file
                     break
 
             if readme_file:
@@ -74,11 +74,10 @@ def _repo_id(repository_ctx):
             break
 
     if not readme_file:
-        readme_file = "MODULE.bazel"
+        readme_file = repository_ctx.path(paths.join(str(repository_ctx.workspace_root), "MODULE.bazel"))
 
-    return readme_file
-
-    return hash(repository_ctx, "\n".join(repository_ctx.read(readme_file).split("\n")[:4]))
+    content = "\n".join(repository_ctx.read(readme_file).split("\n")[:4])
+    return hash(repository_ctx, content)
 
 
 def _repo_user(repository_ctx):
