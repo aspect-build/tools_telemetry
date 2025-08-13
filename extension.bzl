@@ -1,8 +1,5 @@
-load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//:sha1.bzl", sha1="sha1")
-
 """
-Telemtry bound for Aspect.
+Telemetry bound for Aspect.
 
 These metrics are designed to tell us at a coarse grain:
 - Who (organizations) is using Bazel and our rulesets
@@ -14,244 +11,18 @@ For transparency the report data we submit is persisted
 as @aspect_telemetry_report//:report.json
 """
 
-def hash(repository_ctx, data, fn=sha1):
-    """Hash, honoring a salt value from the environment."""
-
-    salt = repository_ctx.os.environ.get("ASPECT_TOOLS_TELEMETRY_SALT")
-    if salt:
-        data = salt + ";" + data
-    return fn(data)
-
-
-TELEMETRY_REGISTRY = {}
-
-def _is_ci(repository_ctx):
-    """Detect if the build is happening in 'CI'. Pretty much all the vendors set this."""
-
-    return repository_ctx.os.environ.get("CI") != None
-
-TELEMETRY_REGISTRY["ci"] = _is_ci
-
-def _is_bazelisk(repository_ctx):
-    """Detect if the build is using bazelisk; this persists into the repo env state."""
-
-    return repository_ctx.os.environ.get("BAZELISK") != None or repository_ctx.os.environ.get("BAZELISK_SKIP_WRAPPER") != None
-
-TELEMETRY_REGISTRY["bazelisk"] = _is_bazelisk
-
-def _shell(repository_ctx):
-    """Detect the shell."""
-
-    return repository_ctx.os.environ.get("SHELL")
-
-TELEMETRY_REGISTRY["shell"] = _shell
-
-def _has_tools_bazel(repository_ctx):
-    """Detect if the repository has a tools/bazel wrapper script."""
-
-    return repository_ctx.path(paths.join(str(repository_ctx.workspace_root), "tools/bazel")).exists
-
-TELEMETRY_REGISTRY["has_bazel_tool"] = _has_tools_bazel
-
-def _has_bazel_prelude(repository_ctx):
-    """Detect if the repository has a //tools/build_rules/prelude_bazel."""
-
-    return repository_ctx.path(paths.join(str(repository_ctx.workspace_root), "tools/build_rules/prelude_bazel")).exists
-
-TELEMETRY_REGISTRY["has_bazel_prelude"] = _has_bazel_prelude
-
-def _has_workspace(repository_ctx):
-    """Detect if the repository has a WORKSPACE file."""
-
-    return repository_ctx.path(paths.join(str(repository_ctx.workspace_root), "WORKSPACE")).exists or repository_ctx.path(paths.join(str(repository_ctx.workspace_root), "WORKSPACE.bazel")).exists
-
-TELEMETRY_REGISTRY["has_bazel_workspace"] = _has_workspace
-
-def _has_module(repository_ctx):
-    """Detect if the repository has a MODULE.bazel file."""
-
-    return repository_ctx.path(paths.join(str(repository_ctx.workspace_root), "MODULE.bazel")).exists
-
-TELEMETRY_REGISTRY["has_bazel_module"] = _has_module
-
-def _bazel_version(repository_ctx):
-    return native.bazel_version
-
-TELEMETRY_REGISTRY["bazel_version"] = _bazel_version
-
-def _os(repository_ctx):
-    return repository_ctx.os.name
-
-TELEMETRY_REGISTRY["os"] = _os
-
-def _arch(repository_ctx):
-    return repository_ctx.os.arch
-
-TELEMETRY_REGISTRY["arch"] = _arch
-
-def _build_counter(repository_ctx):
-    """Try to get a counter for the build.
-
-    This allows estimation of rate of builds.
-    """
-
-    # Note that on GHA run numbers may be reused and there's a retry count
-    # subcounter. Since that's the only platform to do so, we're going to just
-    # pretend it doesn't exist.
-    for counter_var in [
-        "BUILDKITE_BUILD_NUMBER",  # Buildkite
-        "GITHUB_RUN_NUMBER",       # Github/forgejo/gitea
-        "CI_PIPELINE_IID",         # Gitlab
-        "CIRCLE_BUILD_NUM",        # CircleCI
-        "DRONE_BUILD_NUMBER",      # Drone
-        "BUILD_NUMBER",            # Jenkins
-        "CI_PIPELINE_NUMBER",      # Woodpecker?
-        "TRAVIS_BUILD_NUMBER",     # Travis
-    ]:
-        counter = repository_ctx.os.environ.get(counter_var)
-        if counter:
-            return counter
-
-TELEMETRY_REGISTRY["counter"] = _build_counter
-
-def _build_runner(repository_ctx):
-    """Try to identify the CI/CD runner environment."""
-
-    for var, platform in [
-        ("BUILDKITE_BUILD_NUMBER", "buildkite"),
-        ("FORGEJO_TOKEN", "forgejo"),  # FIXME: This value is a secret, avoid
-        ("GITEA_ACTIONS", "gitea"),
-        ("GITHUB_RUN_NUMBER", "github-actions"),
-        ("GITLAB_CI", "gitlab"),
-        ("CIRCLE_BUILD_NUM", "circleci"),
-        ("DRONE_BUILD_NUMBER", "drone"),
-        ("BUILD_NUMBER", "jenkins"),
-        ("TRAVIS", "travis")
-    ]:
-        val = repository_ctx.os.environ.get(var)
-        if val != None:
-            return platform
-
-    # Set on Woodpecker and in some other environments
-    return repository_ctx.os.environ.get("CI_SYSTEM_NAME")
-
-TELEMETRY_REGISTRY["runner"] = _build_runner
-
-
-def _repo_org(repository_ctx):
-    """Try to extract the organization name."""
-
-    repo = None
-    for var in [
-        "BUILDKITE_ORGANIZATION_SLUG", # Buildkite
-        "GITHUB_REPOSITORY_OWNER",     # GH/Gitea/Forgejo
-        "CI_PROJECT_NAMESPACE",        # GL
-        "CIRCLE_PROJECT_USERNAME",     # Circle
-        # TODO: Jenkins only has the fetch URL which seems excessively sensitive
-        "DRONE_REPO_NAMESPACE",        # Drone
-        "CI_REPO_OWNER",               # Woodpecker
-        "TRAVIS_REPO_SLUG",            # Travis
-    ]:
-        repo = repository_ctx.os.environ.get(var)
-        if repo:
-            return repo
-
-TELEMETRY_REGISTRY["org"] = _repo_org
-
-
-def _repo_id(repository_ctx):
-    """Try to extract an aggregation ID from the repo context.
-
-    Ideally we want to use the first few (usually stable!) lines from a highly
-    stable file such as the README. This will provide a consistent aggregation
-    ID regardless of whether a project is checked out locally or remotely.
-
-    Note that the repo ID doesn't depend on the org name, since the org name
-    cannot be determined on workstations but we do want to count CI vs
-    workstation builds for a single repo consistently.
-
-    """
-
-    readme_file = None
-    for suffix in [
-        "",
-        # Github allows the README to be squirreled away, so we may need to
-        # check subdirs. Assume that gitlab et all allow the same.
-        "doc",
-        "docs",
-        ".github",
-        ".gitlab",
-        ".gitea",
-        ".forgejo",
-    ]:
-        dir = repository_ctx.workspace_root
-        if suffix:
-            dir = paths.join(str(dir), suffix)
-        dir = repository_ctx.path(dir)
-        if dir.exists and dir.is_dir:
-            for entry in dir.readdir():
-                if entry.basename.lower().find("readme") != -1:
-                    readme_file = entry
-                    break
-
-        if readme_file:
-            break
-
-    # As a fallback use the top of the MODULE.bazel file
-    if not readme_file:
-        readme_file = repository_ctx.path(paths.join(str(repository_ctx.workspace_root), "MODULE.bazel"))
-
-    return hash(repository_ctx, "\n".join(repository_ctx.read(readme_file).split("\n")[:4]))
-
-TELEMETRY_REGISTRY["id"] = _repo_id
-
-
-def _repo_user(repository_ctx):
-    """Try to extract a fingerprint for the user who initiated the build.
-
-    Note that we salt the user IDs with the identified project ID to prevent
-    correllation.
-
-    """
-
-    user = None
-    for var in [
-        "BUILDKITE_BUILD_AUTHOR_EMAIL", # Buildkite
-        "GITHUB_ACTOR",                 # GH/Gitea/Forgejo
-        "GITLAB_USER_EMAIL",            # GL
-        "CIRCLE_USERNAME",              # Circle
-        # TODO: Jenkins
-        "DRONE_COMMIT_AUTHOR",          # Drone
-        "DRONE_COMMIT_AUTHOR_EMAIL",    # Drone
-        "CI_COMMIT_AUTHOR",             # Woodpecker
-        "CI_COMMIT_AUTHOR_EMAIL",       # Woodpecker
-        # TODO: Travis
-        "LOGNAME",                      # Generic unix
-        "USER",                         # Generic unix
-    ]:
-        user = repository_ctx.os.environ.get(var)
-        if user:
-            break
-
-    if user:
-        return hash(repository_ctx, str(_repo_id(repository_ctx)) + ";" + user)
-
-TELEMETRY_REGISTRY["user"] = _repo_user
-
-
-def _repo_bzlmod(repository_ctx):
-    return repository_ctx.attr.deps
-
-TELEMETRY_REGISTRY["deps"] = _repo_bzlmod
+load("//collectors:basics.bzl", register_basics="register")
+load("//collectors:bazel.bzl", register_bazel="register")
+load("//collectors:ci.bzl", register_ci="register")
+load("//collectors:fingerprinting.bzl", register_fingerprints="register")
 
 
 TELEMETRY_ENV_VAR = "ASPECT_TOOLS_TELEMETRY"
 TELEMETRY_DEST_VAR = "ASPECT_TOOLS_TELEMETRY_ENDPOINT"
 TELEMETRY_DEST = "https://telemetry2.aspect.build/ingest?source=tools_telemetry"
-TELEMETRY_FEATURES = list(TELEMETRY_REGISTRY.keys())
 
 
-def parse_opt_out(flag, default=[]):
+def parse_opt_out(flag, default=[], groups={}):
     """
     Parse Bazel-style set semantics flags.
 
@@ -261,9 +32,6 @@ def parse_opt_out(flag, default=[]):
     """
 
     terms = flag.split(",")
-    groups = {
-        "all": TELEMETRY_FEATURES,
-    }
     acc = {}
 
     specified = []
@@ -328,11 +96,23 @@ def _tel_repository_impl(repository_ctx):
     else:
         allowed_val = "all"
 
-    allowed_telemetry = parse_opt_out(allowed_val or "all", TELEMETRY_FEATURES)
+    registry = (
+        {}
+        | register_basics()
+        | register_bazel()
+        | register_ci()
+        | register_fingerprints()
+    )
+
+    features = registry.keys()
+    groups = {
+        "all": features,
+    }
+    allowed_telemetry = parse_opt_out(allowed_val or "all", features, groups)
 
     ## Collect enabled data
     telemetry = {}
-    for feature, handler in TELEMETRY_REGISTRY.items():
+    for feature, handler in registry.items():
         if feature in allowed_telemetry:
             telemetry[feature] = handler(repository_ctx)
 
