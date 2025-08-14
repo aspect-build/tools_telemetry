@@ -149,6 +149,12 @@ exports_files(["report.json", "defs.bzl"], visibility = ["//visibility:public"])
                 "--max-time", "1",
                 "--connect-timeout", "0.5",
                 "--request", "POST",
+                # Persist the POST method across redirects. Maddeningly this is
+                # the RFC specified behavior but almost no client originaly
+                # behaved this way so cURL jumps off a cliff too like its
+                # friends and we have to tell it to follow the spec. Ideally
+                # we'd serve 307s instead but we may not be able to.
+                "--post302",
                 "--header", "Content-Type:application/json",
                 "--data", "@report.json",
                 endpoint],
