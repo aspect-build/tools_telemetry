@@ -135,7 +135,7 @@ TELEMETRY = 1
 
     repository_ctx.file(
         "BUILD.bazel",
-        """
+        """\
 exports_files(["report.json", "defs.bzl"], visibility = ["//visibility:public"])
 """
     )
