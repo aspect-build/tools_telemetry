@@ -135,8 +135,17 @@ TELEMETRY = 1
 
     repository_ctx.file(
         "BUILD.bazel",
-        """
+        """\
+load("@bazel_skylib//rules/private:bzl_library.bzl", "bzl_library")
+
 exports_files(["report.json", "defs.bzl"], visibility = ["//visibility:public"])
+
+bzl_library(
+    name = "defs",
+    srcs = [
+        "defs.bzl",
+    ],
+)
 """
     )
 
