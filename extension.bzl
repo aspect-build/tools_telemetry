@@ -177,12 +177,6 @@ def _tel_impl(module_ctx):
         it.replace("/bazel_registry.json", "/modules/") for it in raw_deps.keys()
         if it.endswith("/bazel_registry.json")
     ]
-    allowlist = [
-        "aspect_",
-        "bazel",
-        "rules_",
-        "tools_",
-    ]
     deps = {}
     for url, _sha in raw_deps.items():
         if not url.endswith("/source.json"):
@@ -200,9 +194,7 @@ def _tel_impl(module_ctx):
         # jsoncpp/1.9.5
 
         pkg, rev = url.split("/", 1)                
-        for prefix in allowlist:
-            if pkg.startswith(prefix):
-                deps[pkg] = rev
+        deps[pkg] = rev
 
     tel_repository(
         name = "aspect_tools_telemetry_report",
