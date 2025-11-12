@@ -143,9 +143,11 @@
   "moduleExtensions": {
     "@@aspect_tools_telemetry+//:extension.bzl%telemetry": {
       "general": {
-        "bzlTransitiveDigest": "CURj4M2QyvUX3P/ZiHrxoulhidc4Fofyk5deYkjwXhk=",
+        "bzlTransitiveDigest": "QlIDCHMHXgrjBkjS2I7Tzvx2mac0yAFCJzuiGmp+gL8=",
         "usagesDigest": "Hw1RmkqUoOCGr84h0munD3pk5WGitRzn+3mGpmwFe2c=",
-        "recordedFileInputs": {},
+        "recordedFileInputs": {
+          "@@//MODULE.bazel.lock": "a657dfe435f87011d523ac353ba04a00650368f5e348ea907deb6a39a218d3e7"
+        },
         "recordedDirentsInputs": {},
         "envVariables": {},
         "generatedRepoSpecs": {
@@ -153,8 +155,20 @@
             "repoRuleId": "@@aspect_tools_telemetry+//:extension.bzl%tel_repository",
             "attributes": {
               "deps": {
-                "simple-example": "0.0.0",
-                "aspect_tools_telemetry": "0.0.0"
+                "bazel_features": "1.30.0",
+                "bazel_lib": "3.0.0",
+                "bazel_skylib": "1.8.1",
+                "rules_android": "0.1.1",
+                "rules_cc": "0.1.1",
+                "rules_fuzzing": "0.5.2",
+                "rules_java": "8.14.0",
+                "rules_jvm_external": "6.3",
+                "rules_kotlin": "1.9.6",
+                "rules_license": "1.0.0",
+                "rules_pkg": "1.0.1",
+                "rules_proto": "7.0.2",
+                "rules_python": "0.40.0",
+                "rules_shell": "0.4.1"
               }
             }
           }

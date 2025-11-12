@@ -171,9 +171,35 @@ tel_repository = repository_rule(
 
 
 def _tel_impl(module_ctx):
+    lock_content = json.decode(module_ctx.read(module_ctx.path(Label("@@//:MODULE.bazel.lock"))))
+    raw_deps = lock_content.get("registryFileHashes", {})
+    registries = [
+        it.replace("/bazel_registry.json", "/modules/") for it in raw_deps.keys()
+        if it.endswith("/bazel_registry.json")
+    ]
+    deps = {}
+    for url, _sha in raw_deps.items():
+        if not url.endswith("/source.json"):
+            continue
+
+        # https://bcr.bazel.build/modules/jsoncpp/1.9.5/source.json
+
+        url = url.replace("/source.json", "")
+
+        # https://bcr.bazel.build/modules/jsoncpp/1.9.5
+        
+        for registry in registries:
+            url = url.replace(registry, "")
+
+        # jsoncpp/1.9.5
+
+        if "/" in url:
+            pkg, rev = url.split("/", 1)                
+            deps[pkg] = rev
+
     tel_repository(
         name = "aspect_tools_telemetry_report",
-        deps = {it.name: it.version for it in module_ctx.modules}
+        deps = deps
     )
 
 # TODO: Should the extension in the main module be able to set telemetry feature
