@@ -193,8 +193,9 @@ def _tel_impl(module_ctx):
 
         # jsoncpp/1.9.5
 
-        pkg, rev = url.split("/", 1)                
-        deps[pkg] = rev
+        if "/" in url:
+            pkg, rev = url.split("/", 1)                
+            deps[pkg] = rev
 
     tel_repository(
         name = "aspect_tools_telemetry_report",
