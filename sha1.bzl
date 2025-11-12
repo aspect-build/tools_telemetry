@@ -1,4 +1,4 @@
-load("@aspect_bazel_lib//lib:strings.bzl", "ord")
+load("@bazel_lib//lib:strings.bzl", "ord")
 
 def rotl32(x, n):
     return ((x << n) | (x >> (32 - n))) & 0xFFFFFFFF
