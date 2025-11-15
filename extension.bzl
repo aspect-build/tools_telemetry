@@ -169,9 +169,10 @@ tel_repository = repository_rule(
     },
 )
 
-
-def _tel_impl(module_ctx):
-    lock_content = json.decode(module_ctx.read(module_ctx.path(Label("@@//:MODULE.bazel.lock"))))
+def _parse_lockfile(module_ctx, module_lock):
+    lock_content = json.decode(module_ctx.read(
+        module_lock
+    ))
     raw_deps = lock_content.get("registryFileHashes", {})
     registries = [
         it.replace("/bazel_registry.json", "/modules/") for it in raw_deps.keys()
@@ -187,15 +188,23 @@ def _tel_impl(module_ctx):
         url = url.replace("/source.json", "")
 
         # https://bcr.bazel.build/modules/jsoncpp/1.9.5
-        
+
         for registry in registries:
             url = url.replace(registry, "")
 
         # jsoncpp/1.9.5
 
         if "/" in url:
-            pkg, rev = url.split("/", 1)                
+            pkg, rev = url.split("/", 1)
             deps[pkg] = rev
+
+
+def _tel_impl(module_ctx):
+    module_lock = module_ctx.path(Label("@@//:MODULE.bazel.lock"))
+    if module_lock.exists:
+        deps = _parse_lockfile(module_ctx, module_lock)
+    else:
+        deps = {it.name: it.version for it in module_ctx.modules}
 
     tel_repository(
         name = "aspect_tools_telemetry_report",
