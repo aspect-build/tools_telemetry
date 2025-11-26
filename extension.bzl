@@ -171,7 +171,8 @@ tel_repository = repository_rule(
 
 def _parse_lockfile(module_ctx, module_lock):
     lock_content = json.decode(module_ctx.read(
-        module_lock
+        module_lock,
+        watch='no',
     ))
     raw_deps = lock_content.get("registryFileHashes", {})
     registries = [
