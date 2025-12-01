@@ -37,9 +37,44 @@ def _has_module(repository_ctx):
 def _bazel_version(repository_ctx):
     return native.bazel_version
 
+def _parse_lockfile(repository_ctx, module_lock):
+    lock_content = json.decode(repository_ctx.read(
+        module_lock,
+    ))
 
-def _repo_bzlmod(repository_ctx):
-    return repository_ctx.attr.deps
+    raw_deps = lock_content.get("registryFileHashes", {})
+    registries = [
+        it.replace("/bazel_registry.json", "/modules/") for it in raw_deps.keys()
+        if it.endswith("/bazel_registry.json")
+    ]
+    deps = {}
+    for url, _sha in raw_deps.items():
+        if not url.endswith("/source.json"):
+            continue
+
+        # https://bcr.bazel.build/modules/jsoncpp/1.9.5/source.json
+
+        url = url.replace("/source.json", "")
+
+        # https://bcr.bazel.build/modules/jsoncpp/1.9.5
+
+        for registry in registries:
+            url = url.replace(registry, "")
+
+        # jsoncpp/1.9.5
+
+        if "/" in url:
+            pkg, rev = url.split("/", 1)
+            deps[pkg] = rev
+
+    return deps
+
+def _repo_deps(repository_ctx):
+    module_lock = repository_ctx.path(str(repository_ctx.workspace_root) + "/MODULE.bazel.lock")
+    if module_lock.exists:
+        return _parse_lockfile(repository_ctx, module_lock)
+    else:
+        return repository_ctx.attr.deps
 
 
 def register():
@@ -50,5 +85,5 @@ def register():
         "has_bazel_workspace": _has_workspace,
         "has_bazel_module": _has_module,
         "bazel_version": _bazel_version,
-        "deps": _repo_bzlmod,
+        "deps": _repo_deps,
     }
