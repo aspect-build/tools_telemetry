@@ -171,8 +171,10 @@ tel_repository = repository_rule(
 
 def _parse_lockfile(module_ctx, module_lock):
     lock_content = json.decode(module_ctx.read(
-        module_lock
+        module_lock,
+        watch="no",
     ))
+
     raw_deps = lock_content.get("registryFileHashes", {})
     registries = [
         it.replace("/bazel_registry.json", "/modules/") for it in raw_deps.keys()
@@ -197,6 +199,8 @@ def _parse_lockfile(module_ctx, module_lock):
         if "/" in url:
             pkg, rev = url.split("/", 1)
             deps[pkg] = rev
+
+    return deps
 
 
 def _tel_impl(module_ctx):
