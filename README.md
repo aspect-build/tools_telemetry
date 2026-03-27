@@ -15,28 +15,45 @@ Examples:
 
 ## Controlling reporting
 
-The telemetry module honors `$DO_NOT_TRACK` and will disable itself if this variable is set.
+### Consent
 
-The telemetry module can be controlled at a finer granularity with the `$ASPECT_TOOLS_TELEMETRY` environment variable.
-`$ASPECT_TOOLS_TELEMETRY` is a comma joined list of reporting features using Bazel's set notation.
+Telemetry collection requires explicit opt-in or opt-out via the `ASPECT_TOOLS_TELEMETRY_CONSENT` flag.
+If this flag is not set, the build will fail with instructions to configure it.
 
-Some of the collector features can be overridden or salted for further privacy if so desired.
+Add **one** of the following to your `.bazelrc`:
 
-- `$ASPECT_TOOLS_TELEMETRY_SALT` is a value which will be included whenever computing a hash or ID.
-  This allows you to salt correlation IDs if you so choose.
+``` shell
+common --repo_env=ASPECT_TOOLS_TELEMETRY_CONSENT=allow     # opt in
+common --repo_env=ASPECT_TOOLS_TELEMETRY_CONSENT=disallow  # opt out
+```
+
+Alternatively, a `$DO_NOT_TRACK` variable may be set in the environment as an alias for `CONSENT=disallow`.
+
+### Fine-grained control
+
+The set of reported fields can be further controlled with the `$ASPECT_TOOLS_TELEMETRY`
+environment variable, which is a comma-joined list of feature names using Bazel's set notation.
+
+Some collector features can be salted for further privacy:
+
+- `$ASPECT_TOOLS_TELEMETRY_SALT` is a value included whenever computing a hash or ID,
+  allowing you to further anonymize correlation IDs.
 
 ### Example `.bazelrc` configurations
 
 ``` shell
+# Required: explicitly opt in or out
+common --repo_env=ASPECT_TOOLS_TELEMETRY_CONSENT=allow
+
 # Since sha1 is a vulnerable hash we recommend providing a salt value
 common --repo_env=ASPECT_TOOLS_TELEMETRY_SALT=[FIXME small random value]
 
-common --repo_env=ASPECT_TOOLS_TELEMETRY=all  # enabled (default)
+common --repo_env=ASPECT_TOOLS_TELEMETRY=all  # report all fields (default)
 common --repo_env=ASPECT_TOOLS_TELEMETRY=deps # only report aspect deps
 
-common --repo_env=ASPECT_TOOLS_TELEMETRY=     # disabled
-common --repo_env=ASPECT_TOOLS_TELEMETRY=-all # also disabled
-common --repo_env=ASPECT_TOOLS_TELEMETRY=-org # just disable org name reporting
+common --repo_env=ASPECT_TOOLS_TELEMETRY=     # disable all fields
+common --repo_env=ASPECT_TOOLS_TELEMETRY=-all # also disables all fields
+common --repo_env=ASPECT_TOOLS_TELEMETRY=-org # disable only org name reporting
 ```
 
 ## Reporting features
@@ -64,8 +81,9 @@ The included examples/simple submodule provides a sandbox for easily testing the
 ``` shellsession
 ❯ cd examples/simple
 
-# Default unconfigured behavior
+# Opted-in behavior
 ❯ bazel build \
+    --repo_env=ASPECT_TOOLS_TELEMETRY_CONSENT=allow \
     --repo_env=CI=1 \
     --repo_env=DRONE_BUILD_NUMBER=678 \
     --repo_env=GIT_URL=http://github.com/aspect-build/tools_telemetry.git \
@@ -99,13 +117,13 @@ INFO: Build completed successfully, 2 total actions
    "user": "94fb5cf79f8322bd3f999a10eb713f478470979c"
 }%
 
-# Disabled behavior
-❯ bazel build \
+# Opted-out behavior
+❯ DO_NOT_TRACK=1 bazel build \
     --repo_env=CI=1 \
     --repo_env=BUILD_NUMBER=678 \
     --repo_env=JENKINS_HOME=$HOME \
     --repo_env=GIT_URL=http://github.com/aspect-build/tools_telemetry.git \
-    --repo_env=DO_NOT_TRACK=1 //:report.json \
+    //:report.json \
     && cat bazel-bin/report.json
 INFO: Analyzed target //:report.json (7 packages loaded, 10 targets configured).
 INFO: Found 1 target...

@@ -17,9 +17,52 @@ load("//collectors:ci.bzl", register_ci="register")
 load("//collectors:fingerprinting.bzl", register_fingerprints="register")
 
 
+TELEMETRY_CONSENT_VAR = "ASPECT_TOOLS_TELEMETRY_CONSENT"
 TELEMETRY_ENV_VAR = "ASPECT_TOOLS_TELEMETRY"
 TELEMETRY_DEST_VAR = "ASPECT_TOOLS_TELEMETRY_ENDPOINT"
 TELEMETRY_DEST = "https://telemetry.aspect.build/ingest?source=tools_telemetry"
+
+
+def parse_consent(consent_val):
+    """Parse the telemetry consent flag.
+
+    The flag must be set explicitly. Returns a struct with fields:
+      - allowed: True (proceed), False (opted out), or None (error/unset)
+      - error: error message string if allowed is None, else None
+    """
+    if consent_val == None:
+        return struct(
+            allowed = None,
+            error = """\
+
+Aspect Build would like to gather usage data on our rulesets.
+We use this data to understand which companies are using our rulesets, how heavily,
+and what features are in use so that we can prioritize our work to best support our users.
+
+-> To allow telemetry gathering, set this flag 'allow' in .bazelrc:
+    common --repo_env={var}=allow
+
+-> To opt-out, set it to 'disallow' in .bazelrc:
+    common --repo_env={var}=disallow
+or set the DO_NOT_TRACK environment variable to any value.
+
+More information is at https://github.com/aspect-build/tools_telemetry
+Usage of this data is subject to our privacy policy: https://aspect.build/privacy-policy
+
+""".format(var = TELEMETRY_CONSENT_VAR),
+        )
+    val = consent_val.strip().lower()
+    if val == "allow":
+        return struct(allowed = True, error = None)
+    if val == "disallow":
+        return struct(allowed = False, error = None)
+    return struct(
+        allowed = None,
+        error = "Invalid value for {var}: '{val}'. Expected 'allow' or 'disallow'.".format(
+            var = TELEMETRY_CONSENT_VAR,
+            val = consent_val,
+        ),
+    )
 
 
 def parse_opt_out(flag, default=[], groups={}):
@@ -74,7 +117,30 @@ def parse_opt_out(flag, default=[], groups={}):
     return [k for k, v in acc.items() if v == 1]
 
 
+def _write_repository_files(repository_ctx, telemetry):
+    repository_ctx.file("report.json", json.encode_indent(telemetry, indent="  "))
+    repository_ctx.file("defs.bzl", "TELEMETRY = 1\n")
+    repository_ctx.file(
+        "BUILD.bazel",
+        'exports_files(["report.json", "defs.bzl"], visibility = ["//visibility:public"])\n',
+    )
+
+
 def _tel_repository_impl(repository_ctx):
+    ## Require explicit consent before collecting anything.
+    ## DO_NOT_TRACK is treated as an alias for CONSENT=disallow.
+    consent_val = repository_ctx.os.environ.get(TELEMETRY_CONSENT_VAR)
+    if consent_val == None and repository_ctx.os.environ.get("DO_NOT_TRACK"):
+        consent_val = "disallow"
+    consent = parse_consent(consent_val)
+    if consent.error:
+        fail(consent.error)
+
+    if not consent.allowed:
+        ## User opted out - write empty repository files and stop
+        _write_repository_files(repository_ctx, {})
+        return
+
     ## Try to find a curl
     curl = repository_ctx.which("curl") or repository_ctx.which("curl.exe")
 
@@ -87,14 +153,7 @@ def _tel_repository_impl(repository_ctx):
     ## Parse the feature flagging var
     tel_val = repository_ctx.os.environ.get(TELEMETRY_ENV_VAR)
 
-    allowed_val = None
-
-    if repository_ctx.os.environ.get("DO_NOT_TRACK"):
-        allowed_val = "-all"
-    elif tel_val:
-        allowed_val = tel_val
-    else:
-        allowed_val = "all"
+    allowed_val = tel_val if tel_val else "all"
 
     registry = (
         {}
@@ -120,25 +179,7 @@ def _tel_repository_impl(repository_ctx):
     if telemetry:
         telemetry = {"tools_telemetry": telemetry}
 
-    ## Lay down report files
-    telemetry_file = repository_ctx.file(
-        "report.json",
-        json.encode_indent(telemetry, indent="  "),
-    )
-
-    defs_file = repository_ctx.file(
-        "defs.bzl",
-        """\
-TELEMETRY = 1
-        """
-    )
-
-    repository_ctx.file(
-        "BUILD.bazel",
-        """\
-exports_files(["report.json", "defs.bzl"], visibility = ["//visibility:public"])
-"""
-    )
+    _write_repository_files(repository_ctx, telemetry)
 
     ## Send the report if enabled
     # Note that ANY of these things will disable telemetry
