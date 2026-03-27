@@ -87,8 +87,6 @@ def _tel_repository_impl(repository_ctx):
     ## Parse the feature flagging var
     tel_val = repository_ctx.os.environ.get(TELEMETRY_ENV_VAR)
 
-    allowed_val = None
-
     if repository_ctx.os.environ.get("DO_NOT_TRACK"):
         allowed_val = "-all"
     elif tel_val:
@@ -139,6 +137,17 @@ TELEMETRY = 1
 exports_files(["report.json", "defs.bzl"], visibility = ["//visibility:public"])
 """
     )
+
+    ## Notify if telemetry is running without explicit acknowledgement
+    if allowed_telemetry and not repository_ctx.os.environ.get(TELEMETRY_ENV_VAR):
+        # buildifier: disable=print
+        print("""\
+Aspect Telemetry is collecting usage data, pursuant to the https://aspect.build/privacy-policy.
+See https://github.com/aspect-build/tools_telemetry for details.
+
+To silence this notice, add to your .bazelrc:
+    common --repo_env={var}=all
+""".format(var = TELEMETRY_ENV_VAR))
 
     ## Send the report if enabled
     # Note that ANY of these things will disable telemetry
