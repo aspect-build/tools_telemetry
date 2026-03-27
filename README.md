@@ -17,13 +17,14 @@ Examples:
 
 ### Consent
 
-When telemetry is collected, a notice is printed. To silence it, add to your `.bazelrc`:
+When telemetry is collected without `$ASPECT_TOOLS_TELEMETRY` being set, a notice is printed.
+Setting it to `allow` (a synonym for `all`) silences the notice:
 
 ``` shell
-common --repo_env=ASPECT_TOOLS_TELEMETRY_CONSENT=allow
+common --repo_env=ASPECT_TOOLS_TELEMETRY=allow
 ```
 
-To opt out entirely, use `$DO_NOT_TRACK` or `$ASPECT_TOOLS_TELEMETRY` (see below).
+To opt out entirely, use `$DO_NOT_TRACK` or set `$ASPECT_TOOLS_TELEMETRY` to an empty value or `-all`.
 
 ### Fine-grained control
 
