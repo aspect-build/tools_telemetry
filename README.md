@@ -15,26 +15,15 @@ Examples:
 
 ## Controlling reporting
 
-### Consent
+The telemetry module honors `$DO_NOT_TRACK` and will disable itself if this variable is set.
 
-When telemetry is collected without `$ASPECT_TOOLS_TELEMETRY` being set, a notice is printed.
-Setting it to `allow` (a synonym for `all`) silences the notice:
+The telemetry module can be controlled at a finer granularity with the `$ASPECT_TOOLS_TELEMETRY` environment variable.
+`$ASPECT_TOOLS_TELEMETRY` is a comma joined list of reporting features using Bazel's set notation.
 
-``` shell
-common --repo_env=ASPECT_TOOLS_TELEMETRY=allow
-```
+Some of the collector features can be overridden or salted for further privacy if so desired.
 
-To opt out entirely, use `$DO_NOT_TRACK` or set `$ASPECT_TOOLS_TELEMETRY` to an empty value or `-all`.
-
-### Fine-grained control
-
-The set of reported fields can be controlled with the `$ASPECT_TOOLS_TELEMETRY` environment
-variable, a comma-joined list of feature names using Bazel's set notation.
-
-Some collector features can be salted for further privacy:
-
-- `$ASPECT_TOOLS_TELEMETRY_SALT` is a value included whenever computing a hash or ID,
-  allowing you to further anonymize correlation IDs.
+- `$ASPECT_TOOLS_TELEMETRY_SALT` is a value which will be included whenever computing a hash or ID.
+  This allows you to salt correlation IDs if you so choose.
 
 ### Example `.bazelrc` configurations
 
@@ -42,12 +31,12 @@ Some collector features can be salted for further privacy:
 # Since sha1 is a vulnerable hash we recommend providing a salt value
 common --repo_env=ASPECT_TOOLS_TELEMETRY_SALT=[FIXME small random value]
 
-common --repo_env=ASPECT_TOOLS_TELEMETRY=all  # report all fields (default)
+common --repo_env=ASPECT_TOOLS_TELEMETRY=all  # enabled (default)
 common --repo_env=ASPECT_TOOLS_TELEMETRY=deps # only report aspect deps
 
-common --repo_env=ASPECT_TOOLS_TELEMETRY=     # disable all fields
-common --repo_env=ASPECT_TOOLS_TELEMETRY=-all # also disables all fields
-common --repo_env=ASPECT_TOOLS_TELEMETRY=-org # disable only org name reporting
+common --repo_env=ASPECT_TOOLS_TELEMETRY=     # disabled
+common --repo_env=ASPECT_TOOLS_TELEMETRY=-all # also disabled
+common --repo_env=ASPECT_TOOLS_TELEMETRY=-org # just disable org name reporting
 ```
 
 ## Reporting features

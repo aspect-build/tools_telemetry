@@ -105,7 +105,6 @@ def _tel_repository_impl(repository_ctx):
     features = registry.keys()
     groups = {
         "all": features,
-        "allow": features,
     }
     allowed_telemetry = parse_opt_out(allowed_val or "all", features, groups)
 
@@ -147,7 +146,7 @@ Aspect Telemetry is collecting usage data, pursuant to the https://aspect.build/
 See https://github.com/aspect-build/tools_telemetry for details.
 
 To silence this notice, add to your .bazelrc:
-    common --repo_env={var}=allow
+    common --repo_env={var}=all
 """.format(var = TELEMETRY_ENV_VAR))
 
     ## Send the report if enabled
