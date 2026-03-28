@@ -188,6 +188,10 @@ def _tel_impl(module_ctx):
     if hasattr(module_ctx, "facts"):
         last_notice = int(module_ctx.facts.get("notice_version", "0"))
 
+    # Observed purely so tests can force extension re-evaluation by changing its value.
+    if hasattr(module_ctx, "getenv"):
+        module_ctx.getenv("ASPECT_TOOLS_TELEMETRY_TEST")
+
     tel_repository(
         name = "aspect_tools_telemetry_report",
         deps = {it.name: it.version for it in module_ctx.modules},
