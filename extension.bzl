@@ -21,6 +21,13 @@ TELEMETRY_ENV_VAR = "ASPECT_TOOLS_TELEMETRY"
 TELEMETRY_DEST_VAR = "ASPECT_TOOLS_TELEMETRY_ENDPOINT"
 TELEMETRY_DEST = "https://telemetry.aspect.build/ingest?source=tools_telemetry"
 
+# Increment when the notice should be re-broadcasted to users such as text changes or data collection changes.
+_NOTICE_VERSION = 1
+_NOTICE = """\
+Aspect Telemetry will begin collecting usage data on the next invocation, pursuant to the https://aspect.build/privacy-policy.
+See https://github.com/aspect-build/tools_telemetry for details.
+"""
+
 
 def parse_opt_out(flag, default=[], groups={}):
     """
@@ -138,16 +145,12 @@ exports_files(["report.json", "defs.bzl"], visibility = ["//visibility:public"])
 """
     )
 
-    ## Notify if telemetry is running without explicit acknowledgement
-    if allowed_telemetry and not repository_ctx.os.environ.get(TELEMETRY_ENV_VAR):
+    # Notify and skip sending if telemetry was not explicitly configured
+    # and the notice has not been seen before.
+    if allowed_telemetry and not repository_ctx.os.environ.get(TELEMETRY_ENV_VAR) and repository_ctx.attr.last_notice != _NOTICE_VERSION:
         # buildifier: disable=print
-        print("""\
-Aspect Telemetry is collecting usage data, pursuant to the https://aspect.build/privacy-policy.
-See https://github.com/aspect-build/tools_telemetry for details.
-
-To silence this notice, add to your .bazelrc:
-    common --repo_env={var}=all
-""".format(var = TELEMETRY_ENV_VAR))
+        print(_NOTICE)
+        return
 
     ## Send the report if enabled
     # Note that ANY of these things will disable telemetry
@@ -175,14 +178,26 @@ tel_repository = repository_rule(
     implementation = _tel_repository_impl,
     attrs = {
         "deps": attr.string_dict(),
+        "last_notice": attr.int(default = 0),
     },
 )
 
 def _tel_impl(module_ctx):
+    # Use the Bazel 9 facts API to persist the last notice shown
+    last_notice = _NOTICE_VERSION
+    if hasattr(module_ctx, "facts"):
+        last_notice = int(module_ctx.facts.get("notice_version", "0"))
+
     tel_repository(
         name = "aspect_tools_telemetry_report",
-        deps = {it.name: it.version for it in module_ctx.modules}
+        deps = {it.name: it.version for it in module_ctx.modules},
+        last_notice = last_notice,
     )
+
+    if hasattr(module_ctx, "facts"):
+        return module_ctx.extension_metadata(
+            facts = {"notice_version": str(_NOTICE_VERSION)},
+        )
 
 # TODO: Should the extension in the main module be able to set telemetry feature
 # flags or do we want to stick with environment variables.
