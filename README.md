@@ -1,5 +1,9 @@
 # aspect_tools_telemetry
 
+> [!NOTE]
+> This repository uses the [Aspect CLI](https://github.com/aspect-build/aspect-cli) for CI and local development.
+> See the [docs](https://docs.aspect.build/cli/overview) and [install instructions](https://docs.aspect.build/cli/install) to get started.
+
 Aspect's ruleset telemetry Bazel module.
 
 This package defines a Bazel extension which allows for rulesets to report usage to Aspect, allowing us to estimate the install base of Bazel, rulesets, and monitor trends in the ecosystem such as library usage and Bazel versions.
