@@ -9,5 +9,7 @@ local_path_override(
     path = "../..",
 )
 
+bazel_dep(name = "bazel_skylib", version = "1.5.0", dev_dependency = True)
+
 tel = use_extension("@aspect_tools_telemetry//:extension.bzl", "telemetry")
 use_repo(tel, "aspect_tools_telemetry_report")
