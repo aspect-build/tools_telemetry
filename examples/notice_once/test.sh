@@ -11,7 +11,10 @@ set -o errexit -o nounset -o pipefail
 EXAMPLE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 WORK_DIR="$(mktemp -d)"
-trap 'rm -rf "$WORK_DIR"' EXIT
+restore_lockfile() {
+    git -C "$EXAMPLE_DIR" restore MODULE.bazel.lock
+}
+trap 'restore_lockfile; rm -rf "$WORK_DIR"' EXIT
 CURL_LOG="$WORK_DIR/curl_calls.log"
 FAKE_CURL_DIR="$WORK_DIR/bin"
 mkdir -p "$FAKE_CURL_DIR"
@@ -21,17 +24,27 @@ echo "invoked: \$*" >> "$CURL_LOG"
 EOF
 chmod +x "$FAKE_CURL_DIR/curl"
 
-rm -f "$EXAMPLE_DIR/MODULE.bazel.lock"
+restore_lockfile
 
 OUTPUT_BASE="$WORK_DIR/output"
 REPO_ENV_PATH="${FAKE_CURL_DIR}:${PATH}"
 
 cd "$EXAMPLE_DIR"
 
-echo "=== Run 1: expect NO curl call (first invocation shows notice, skips send) ==="
+RUN1_LOG="$WORK_DIR/run1.log"
+RUN2_LOG="$WORK_DIR/run2.log"
+
+echo "=== Run 1: expect notice printed, NO curl call (first invocation) ==="
 ASPECT_TOOLS_TELEMETRY_TEST=1 USE_BAZEL_VERSION=9.x bazel --output_base="$OUTPUT_BASE" build //:report \
     --lockfile_mode=update \
-    --repo_env "PATH=${REPO_ENV_PATH}"
+    --repo_env "PATH=${REPO_ENV_PATH}" \
+    2>&1 | tee "$RUN1_LOG"
+
+if ! grep -q "Aspect Telemetry will begin collecting" "$RUN1_LOG"; then
+    echo "FAIL: notice was not printed on first run (expected notice)"
+    exit 1
+fi
+echo "PASS: notice printed on first run"
 
 if [[ -f "$CURL_LOG" ]]; then
     echo "FAIL: curl was called on first run (expected no call)"
@@ -39,12 +52,19 @@ if [[ -f "$CURL_LOG" ]]; then
 fi
 echo "PASS: curl not called on first run"
 
-echo "=== Run 2: expect curl IS called (notice already shown, data may be sent) ==="
+echo "=== Run 2: expect NO notice printed, curl IS called (notice already shown) ==="
 # Changing ASPECT_TOOLS_TELEMETRY_TEST forces extension re-evaluation. This time the extension
 # should invoke curl to upload telemetry data.
 ASPECT_TOOLS_TELEMETRY_TEST=2 USE_BAZEL_VERSION=9.x bazel --output_base="$OUTPUT_BASE" build //:report \
     --lockfile_mode=update \
-    --repo_env "PATH=${REPO_ENV_PATH}"
+    --repo_env "PATH=${REPO_ENV_PATH}" \
+    2>&1 | tee "$RUN2_LOG"
+
+if grep -q "Aspect Telemetry will begin collecting" "$RUN2_LOG"; then
+    echo "FAIL: notice was printed on second run (expected no notice)"
+    exit 1
+fi
+echo "PASS: notice not printed on second run"
 
 if [[ ! -f "$CURL_LOG" ]]; then
     echo "FAIL: curl was not called on second run (expected a call)"
