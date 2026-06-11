@@ -1,0 +1,6 @@
+genrule(
+    name = "report",
+    outs = ["report.json"],
+    srcs = ["@aspect_tools_telemetry_report//:report.json"],
+    cmd = "cp $< $@",
+)
