@@ -27,6 +27,10 @@ _NOTICE = """\
 Aspect Telemetry will begin collecting usage data on the next invocation, pursuant to the https://aspect.build/privacy-policy.
 See https://github.com/aspect-build/tools_telemetry for details.
 """
+_NOTICE_UPLOADING = """\
+Aspect Telemetry is uploading usage data now and on future builds, pursuant to the https://aspect.build/privacy-policy.
+See https://github.com/aspect-build/tools_telemetry for details.
+"""
 
 
 def parse_opt_out(flag, default=[], groups={}):
@@ -154,6 +158,10 @@ exports_files(["report.json", "defs.bzl"], visibility = ["//visibility:public"])
         # buildifier: disable=print
         print(_NOTICE)
         return
+
+    if not lockfile_present and allowed_telemetry and not repository_ctx.os.environ.get(TELEMETRY_ENV_VAR):
+        # buildifier: disable=print
+        print(_NOTICE_UPLOADING)
 
     ## Send the report if enabled
     # Note that ANY of these things will disable telemetry
