@@ -194,14 +194,14 @@ tel_repository = repository_rule(
 )
 
 def _tel_impl(module_ctx):
-    # Use the Bazel 9 facts API to persist the last notice shown
-    last_notice = _NOTICE_VERSION
-    if hasattr(module_ctx, "facts"):
-        last_notice = int(module_ctx.facts.get("notice_version", "0"))
-
     # Observed purely so tests can force extension re-evaluation by changing its value.
     if hasattr(module_ctx, "getenv"):
         module_ctx.getenv("ASPECT_TOOLS_TELEMETRY_TEST")
+
+    # Look up the most recent version of the notice we have displayed, if possible.
+    last_notice = _NOTICE_VERSION
+    if hasattr(module_ctx, "facts"):
+        last_notice = int(module_ctx.facts.get("notice_version", "0"))
 
     tel_repository(
         name = "aspect_tools_telemetry_report",
@@ -209,6 +209,7 @@ def _tel_impl(module_ctx):
         last_notice = last_notice,
     )
 
+    # Use the facts API to persist the last notice shown
     if hasattr(module_ctx, "facts"):
         return module_ctx.extension_metadata(
             facts = {"notice_version": str(_NOTICE_VERSION)},
