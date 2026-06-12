@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Integration test: behaviour when MODULE.bazel.lock is absent on the first build.
-# Requires Bazel 9+ (facts API needed to persist notice_version across invocations).
+# Integration test: behavior when MODULE.bazel.lock is absent on the first build.
+# Requires Bazel 8.5+ (facts API needed to persist notice_version across invocations).
 #
 # Run 1 (no lockfile): the extension cannot verify whether the notice was previously
 # shown, so it uploads telemetry immediately and prints a one-time notice.
@@ -53,7 +53,6 @@ echo "PASS: curl called on first run"
 rm -f "$CURL_LOG"
 
 echo "=== Run 2: lockfile now present, expect no notice and curl IS called ==="
-# Do NOT delete the lockfile — run 1 created it with notice_version stored in facts.
 ASPECT_TOOLS_TELEMETRY_TEST=2 USE_BAZEL_VERSION=9.x bazel --output_base="$OUTPUT_BASE" build //:report \
     --lockfile_mode=update \
     --repo_env "PATH=${REPO_ENV_PATH}" \

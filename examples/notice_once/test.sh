@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Integration test: telemetry notice is shown on first invocation, curl is called on second.
-# Requires Bazel 9+ (facts API needed to persist notice_version across invocations).
+# Requires Bazel 8.5+ (facts API needed to persist notice_version across invocations).
 #
 # ASPECT_TOOLS_TELEMETRY_TEST is observed by the extension via module_ctx.getenv(), so
 # changing its value between runs forces Bazel to re-evaluate the extension. On re-evaluation

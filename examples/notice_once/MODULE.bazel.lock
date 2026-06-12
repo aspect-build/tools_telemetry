@@ -194,7 +194,7 @@
   "moduleExtensions": {
     "@@aspect_tools_telemetry+//:extension.bzl%telemetry": {
       "general": {
-        "bzlTransitiveDigest": "zVjdFgnThkqJR5tjFWNiyw0xRpKcd6EgefYtrs6mWoQ=",
+        "bzlTransitiveDigest": "R5Jvzvtc14rYa1zTL7FL1f+PkUWpxY9sWFsGY25vOfU=",
         "usagesDigest": "HBQA3yW+LvxWV2d/dMHEuKmqm5bFJ/7laB5ijHq5JY0=",
         "recordedInputs": [
           "REPO_MAPPING:aspect_tools_telemetry+,bazel_lib bazel_lib+",
