@@ -151,14 +151,14 @@ exports_files(["report.json", "defs.bzl"], visibility = ["//visibility:public"])
 
     # Notify and skip sending if telemetry was not explicitly configured
     # and the notice has not been seen before.
-    # If MODULE.bazel.lock is absent we cannot verify whether the notice was
-    # previously shown, so we skip the notice and proceed to send telemetry.
     lockfile_present = repository_ctx.workspace_root.get_child("MODULE.bazel.lock").exists
     if lockfile_present and allowed_telemetry and not repository_ctx.os.environ.get(TELEMETRY_ENV_VAR) and repository_ctx.attr.last_notice != _NOTICE_VERSION:
         # buildifier: disable=print
         print(_NOTICE)
         return
 
+    # If MODULE.bazel.lock is absent we cannot verify whether the notice was
+    # previously shown, so we proceed to send telemetry.
     if not lockfile_present and allowed_telemetry and not repository_ctx.os.environ.get(TELEMETRY_ENV_VAR):
         # buildifier: disable=print
         print(_NOTICE_UPLOADING)
