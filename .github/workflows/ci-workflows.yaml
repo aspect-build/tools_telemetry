@@ -38,3 +38,29 @@ jobs:
             - name: Test
               working-directory: ${{ matrix.workspace.path }}
               run: aspect test --task-key=test-${{ matrix.workspace.slug }}-${{ matrix.bazel.id }} ${{ matrix.bazel.flags }} -- //...
+
+    notice_once:
+        name: notice_once (notice-once, bazel-9)
+        runs-on: ubuntu-latest
+        env:
+            USE_BAZEL_VERSION: "9.x"
+        steps:
+            - uses: actions/checkout@v6
+            - uses: aspect-build/setup-aspect@c22a8f64fb38f82f59ce809cd7eb9f8ae096da44 # v2026.23.2
+              with:
+                aspect-api-token: ${{ secrets.ASPECT_API_TOKEN }}
+            - name: notice-once integration test
+              run: bash examples/notice_once/test.sh
+
+    missing_lockfile:
+        name: missing_lockfile (missing-lockfile, bazel-9)
+        runs-on: ubuntu-latest
+        env:
+            USE_BAZEL_VERSION: "9.x"
+        steps:
+            - uses: actions/checkout@v6
+            - uses: aspect-build/setup-aspect@c22a8f64fb38f82f59ce809cd7eb9f8ae096da44 # v2026.23.2
+              with:
+                aspect-api-token: ${{ secrets.ASPECT_API_TOKEN }}
+            - name: missing-lockfile integration test
+              run: bash examples/missing_lockfile/test.sh
