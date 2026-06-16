@@ -2,14 +2,19 @@
     "homepage": "https://registry.build/github/aspect-build/tools_telemetry",
     "maintainers": [
       {
-        "email": "alex@aspect.build",
-        "github": "alexeagle",
-        "name": "Alex Eagle"
+        "email": "jason@aspect.build",
+        "github": "jbedard",
+        "name": "Jason Bedard"
       },
       {
-        "email": "reid@aspect.build",
-        "github": "arrdem",
-        "name": "Reid D McKenzie"
+        "email": "adamc@aspect.build",
+        "github": "acozzette",
+        "name": "Adam Cozzette"
+      },
+      {
+        "email": "greg@aspect.build",
+        "github": "gregmagolan",
+        "name": "Greg Magolan"
       }
     ],
     "repository": ["github:aspect-build/tools_telemetry"],
