@@ -21,15 +21,18 @@ TELEMETRY_ENV_VAR = "ASPECT_TOOLS_TELEMETRY"
 TELEMETRY_DEST_VAR = "ASPECT_TOOLS_TELEMETRY_ENDPOINT"
 TELEMETRY_DEST = "https://telemetry.aspect.build/ingest?source=tools_telemetry"
 
-# Increment when the notice should be re-broadcasted to users such as text changes or data collection changes.
-_NOTICE_VERSION = 1
+_NOTICE_VERSION = 1  # Increment on text changes or data collection changes
+
 _NOTICE = """\
-Aspect Telemetry will begin collecting usage data on the next invocation, pursuant to the https://aspect.build/privacy-policy.
-See https://github.com/aspect-build/tools_telemetry for details.
+Aspect Telemetry will begin collecting ruleset usage data on the next invocation, pursuant to the https://aspect.build/privacy-policy.
+
+See https://github.com/aspect-build/tools_telemetry for details and opt-out instructions.
 """
+
 _NOTICE_UPLOADING = """\
-Aspect Telemetry is uploading usage data now and on future builds, pursuant to the https://aspect.build/privacy-policy.
-See https://github.com/aspect-build/tools_telemetry for details.
+Aspect Telemetry is uploading ruleset usage data now and on future builds, pursuant to the https://aspect.build/privacy-policy.
+
+See https://github.com/aspect-build/tools_telemetry for details and opt-out instructions.
 """
 
 
