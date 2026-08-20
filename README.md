@@ -40,7 +40,7 @@ common --repo_env=ASPECT_TOOLS_TELEMETRY=deps # only report aspect deps
 
 common --repo_env=ASPECT_TOOLS_TELEMETRY=     # disabled
 common --repo_env=ASPECT_TOOLS_TELEMETRY=-all # also disabled
-common --repo_env=ASPECT_TOOLS_TELEMETRY=-org # just disable org name reporting
+common --repo_env=ASPECT_TOOLS_TELEMETRY=-id_day # just disable the day-scoped repo ID
 ```
 
 ## Reporting features
@@ -55,11 +55,12 @@ common --repo_env=ASPECT_TOOLS_TELEMETRY=-org # just disable org name reporting
 - `has_bazel_prelude`: Does the project use a `prelude_bazel`
 - `has_bazel_tool`: Does the project use a `tools/bazel` script
 - `has_bazel_workspace`: Does the project still have a `WORKSPACE` file
-- `id`: A hash of the repo is used as a stable pseudononymous ID
-- `org`: A human readable organization name string
+- `id_day`: A day-scoped hash of the repo, allowing same-day report deduplication; not linkable across days
 - `os`: The os per `repository_ctx.os.name`
 - `runner`: The CI/CD system being used if any
-- `user`: A salted hash of the user running Bazel's name
+
+No user or organization identifiers are collected. The stable repository
+ID that feeds `id_day` is computed on-device and never leaves the machine.
 
 ## Example exploration
 
@@ -96,11 +97,9 @@ INFO: Build completed successfully, 2 total actions
    "has_bazel_prelude": false,
    "has_bazel_tool": false,
    "has_bazel_workspace": false,
-   "id": "ccc935dd186ed92c3322efb755e8f70ede47c243",
-   "org": null,
+   "id_day": "1c065d5f9c01ac06ba25ff2fb6f7db6c38d29cf3",
    "os": "mac os x",
-   "runner": "drone",
-   "user": "94fb5cf79f8322bd3f999a10eb713f478470979c"
+   "runner": "drone"
 }%
 
 # Disabled behavior
@@ -126,7 +125,7 @@ INFO: Build completed successfully, 1 total action
 For transparency reports are persisted into the Bazel configuration and can be inspected as `@aspect_tools_telemetry_report//:report.json`.
 
 ``` shellsession
-❯ cat $(bazel query --output=location @aspect_tools_telemetry_report//:report.json | cut -d: -f1)
+❯ cat $(bazel info output_base)/external/*aspect_tools_telemetry_report/report.json
 ```
 
 ## Privacy policy
