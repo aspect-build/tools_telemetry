@@ -28,12 +28,6 @@ def _has_workspace(repository_ctx):
     return repository_ctx.path(paths.join(str(repository_ctx.workspace_root), "WORKSPACE")).exists or repository_ctx.path(paths.join(str(repository_ctx.workspace_root), "WORKSPACE.bazel")).exists
 
 
-def _has_module(repository_ctx):
-    """Detect if the repository has a MODULE.bazel file."""
-
-    return repository_ctx.path(paths.join(str(repository_ctx.workspace_root), "MODULE.bazel")).exists
-
-
 def _bazel_version(repository_ctx):
     return native.bazel_version
 
@@ -83,7 +77,6 @@ def register():
         "has_bazel_tool": _has_tools_bazel,
         "has_bazel_prelude": _has_bazel_prelude,
         "has_bazel_workspace": _has_workspace,
-        "has_bazel_module": _has_module,
         "bazel_version": _bazel_version,
         "deps": _repo_deps,
     }

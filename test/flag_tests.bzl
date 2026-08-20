@@ -4,7 +4,7 @@ load("//:extension.bzl", "parse_opt_out")
 def _parse_opt_out_test(ctx):
   env = unittest.begin(ctx)
 
-  features = ["id", "user", "shell"]
+  features = ["id", "user", "os"]
   groups = {"all": features}
 
   asserts.equals(env, features, parse_opt_out("all", features, groups), "all should mean all")
