@@ -51,7 +51,6 @@ common --repo_env=ASPECT_TOOLS_TELEMETRY=-id_day # just disable the day-scoped r
 - `ci`: Is the build occurring in CI/CD or locally
 - `counter`: The build counter if available
 - `deps`: The active set of bzlmod modules which have opted into telemetry
-- `has_bazel_module`: Is a `MODULE.bazel` being used
 - `has_bazel_prelude`: Does the project use a `prelude_bazel`
 - `has_bazel_tool`: Does the project use a `tools/bazel` script
 - `has_bazel_workspace`: Does the project still have a `WORKSPACE` file
@@ -93,7 +92,6 @@ INFO: Build completed successfully, 2 total actions
       "aspect_tools_telemetry": "0.0.0",
       "simple-example": "0.0.0"
    },
-   "has_bazel_module": true,
    "has_bazel_prelude": false,
    "has_bazel_tool": false,
    "has_bazel_workspace": false,
