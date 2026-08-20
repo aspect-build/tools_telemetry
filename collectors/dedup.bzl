@@ -1,5 +1,11 @@
 """
-Machinery for computing anonymous aggregation IDs.
+Machinery for computing anonymous, day-scoped deduplication IDs.
+
+The stable on-device repository ID computed here never leaves the machine.
+The only ID that is reported is `id_day`, a hash of the on-device
+repository ID together with the current UTC date: reports from the same
+repository can be deduplicated and counted uniquely within a single day,
+and cannot be linked across days from the reported data.
 """
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
@@ -7,7 +13,10 @@ load(":utils.bzl", "hash")
 
 
 def _repo_id(repository_ctx):
-    """Try to extract an aggregation ID from the repo context.
+    """Try to extract a stable on-device repository ID from the repo context.
+
+    Only used on-device as an input to the day-scoped ID below; never
+    reported directly.
 
     This strategy scans for a README-like file in some known locations and known
     formats and hashes the first few lines if we can find one. The intuition
@@ -80,39 +89,32 @@ def _repo_id(repository_ctx):
     return hash(repository_ctx, content)
 
 
-def _repo_user(repository_ctx):
-    """Try to extract a fingerprint for the user who initiated the build.
+def _utc_date(repository_ctx):
+    """Get the current UTC date (YYYY-MM-DD) via the system date binary.
 
-    Note that we salt the user IDs with the identified project ID to prevent
-    correllation of user behavior across projects.
-
+    Returns None when unavailable so that the id_day field is simply omitted
+    rather than computed against a bogus date.
     """
 
-    user = None
-    for var in [
-        "BUILDKITE_BUILD_AUTHOR_EMAIL", # Buildkite
-        "GITHUB_ACTOR",                 # GH/Gitea/Forgejo
-        "GITLAB_USER_EMAIL",            # GL
-        "CIRCLE_USERNAME",              # Circle
-        # TODO: Jenkins
-        "DRONE_COMMIT_AUTHOR",          # Drone
-        "DRONE_COMMIT_AUTHOR_EMAIL",    # Drone
-        "CI_COMMIT_AUTHOR",             # Woodpecker
-        "CI_COMMIT_AUTHOR_EMAIL",       # Woodpecker
-        # TODO: Travis
-        "LOGNAME",                      # Generic unix
-        "USER",                         # Generic unix
-    ]:
-        user = repository_ctx.os.environ.get(var)
-        if user:
-            break
+    result = repository_ctx.execute(["date", "-u", "+%Y-%m-%d"])
+    if result.return_code != 0:
+        return None
+    date = result.stdout.strip()
+    if len(date) != 10:
+        return None
+    return date
 
-    if user:
-        return hash(repository_ctx, str(_repo_id(repository_ctx)) + ";" + user)
+
+def _repo_id_day(repository_ctx):
+    """Compute the day-scoped repo deduplication ID; see the module docstring."""
+
+    date = _utc_date(repository_ctx)
+    if not date:
+        return None
+    return hash(repository_ctx, str(_repo_id(repository_ctx)) + ";" + date)
 
 
 def register():
     return {
-        "id": _repo_id,
-        "user": _repo_user,
+        "id_day": _repo_id_day,
     }

@@ -2,37 +2,41 @@
 Telemetry bound for Aspect.
 
 These metrics are designed to tell us at a coarse grain:
-- Who (organizations) is using Bazel and our rulesets
-- How heavily (number of builds cf. German tank problem)
+- How heavily Bazel and our rulesets are used (number of builds cf. German tank problem)
 - What rules are in use
 - What CI platform(s) are in use
 
+Reports carry no user or organization identifiers. The only correlation ID
+is day-scoped (see collectors/dedup.bzl): reports from the same
+repository can be grouped within a single UTC day and cannot be linked
+across days from the reported data.
+
 For transparency the report data we submit is persisted
-as @aspect_telemetry_report//:report.json
+as @aspect_tools_telemetry_report//:report.json
 """
 
 load("//collectors:basics.bzl", register_basics="register")
 load("//collectors:bazel.bzl", register_bazel="register")
 load("//collectors:ci.bzl", register_ci="register")
-load("//collectors:fingerprinting.bzl", register_fingerprints="register")
+load("//collectors:dedup.bzl", register_dedup="register")
 
 
 TELEMETRY_ENV_VAR = "ASPECT_TOOLS_TELEMETRY"
 TELEMETRY_DEST_VAR = "ASPECT_TOOLS_TELEMETRY_ENDPOINT"
 TELEMETRY_DEST = "https://telemetry.aspect.build/ingest?source=tools_telemetry"
 
-_NOTICE_VERSION = 1  # Increment on text changes or data collection changes
+_NOTICE_VERSION = 2  # Increment on text changes or data collection changes
 
 _NOTICE = """\
-Aspect Telemetry will begin collecting ruleset usage data on the next invocation, pursuant to the https://aspect.build/privacy-policy.
+Aspect Telemetry will begin collecting ruleset usage data (which Bazel and module versions are in use) on the next invocation, to help us maintain our open source rulesets. Reports carry no user or organization identifiers and are governed by the https://aspect.build/privacy-policy.
 
-See https://github.com/aspect-build/tools_telemetry for details and opt-out instructions.
+See https://github.com/aspect-build/tools_telemetry for the exact fields and opt-out instructions.
 """
 
 _NOTICE_UPLOADING = """\
-Aspect Telemetry is uploading ruleset usage data now and on future builds, pursuant to the https://aspect.build/privacy-policy.
+Aspect Telemetry is uploading ruleset usage data (which Bazel and module versions are in use) now and on future builds, to help us maintain our open source rulesets. Reports carry no user or organization identifiers and are governed by the https://aspect.build/privacy-policy.
 
-See https://github.com/aspect-build/tools_telemetry for details and opt-out instructions.
+See https://github.com/aspect-build/tools_telemetry for the exact fields and opt-out instructions.
 """
 
 
@@ -113,7 +117,7 @@ def _tel_repository_impl(repository_ctx):
         | register_basics()
         | register_bazel()
         | register_ci()
-        | register_fingerprints()
+        | register_dedup()
     )
 
     features = registry.keys()

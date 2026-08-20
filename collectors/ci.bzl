@@ -55,29 +55,9 @@ def _build_runner(repository_ctx):
     return repository_ctx.os.environ.get("CI_SYSTEM_NAME")
 
 
-def _repo_org(repository_ctx):
-    """Try to extract the organization name."""
-
-    repo = None
-    for var in [
-        "BUILDKITE_ORGANIZATION_SLUG", # Buildkite
-        "GITHUB_REPOSITORY_OWNER",     # GH/Gitea/Forgejo
-        "CI_PROJECT_NAMESPACE",        # GL
-        "CIRCLE_PROJECT_USERNAME",     # Circle
-        # TODO: Jenkins only has the fetch URL which seems excessively sensitive
-        "DRONE_REPO_NAMESPACE",        # Drone
-        "CI_REPO_OWNER",               # Woodpecker
-        "TRAVIS_REPO_SLUG",            # Travis
-    ]:
-        repo = repository_ctx.os.environ.get(var)
-        if repo:
-            return repo
-
-
 def register():
     return {
         "ci": _is_ci,
         "counter": _build_counter,
         "runner": _build_runner,
-        "org": _repo_org,
     }
