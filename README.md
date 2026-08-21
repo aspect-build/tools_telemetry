@@ -17,6 +17,16 @@ Examples:
 - A user adding a new Bazel dependency will invalidate modules and trigger reporting
 - A user making a local code change and performing a build will not trigger reporting
 
+## The notice
+
+The first time the module would report, it prints a notice and sends nothing; reporting
+starts on a later module-graph evaluation, which leaves a window to opt out before
+anything is sent. The record that the notice was shown persists via
+`MODULE.bazel.lock` (Bazel's extension facts). A repository without a lockfile cannot
+carry that record, so it gets a louder notice and reports on the same invocation; on the
+ephemeral CI machines where this typically happens, the notice lands in every job's log,
+so the opt-out is effectively per repository rather than per machine.
+
 ## Controlling reporting
 
 The telemetry module honors `$DO_NOT_TRACK` and will disable itself if this variable is set.
@@ -27,7 +37,11 @@ The telemetry module can be controlled at a finer granularity with the `$ASPECT_
 Some of the collector features can be overridden or salted for further privacy if so desired.
 
 - `$ASPECT_TOOLS_TELEMETRY_SALT` is a value which will be included whenever computing a hash or ID.
-  This allows you to salt correlation IDs if you so choose.
+  This allows you to salt correlation IDs if you so choose. For a public repository, set it as a
+  CI secret rather than committing it, or the salt is as public as the file the ID derives from.
+- `$ASPECT_TOOLS_TELEMETRY_ENDPOINT` overrides where reports are sent. Point it at your own
+  collector and reports go there instead of to Aspect; the payload is the same `report.json`,
+  so anything that accepts a JSON POST works.
 
 ### Example `.bazelrc` configurations
 
@@ -47,10 +61,10 @@ common --repo_env=ASPECT_TOOLS_TELEMETRY=-id_day # just disable the day-scoped r
 
 - `arch`: The arch per `repository_ctx.os.arch`
 - `bazel_version`: The version of Bazel
-- `bazelisk`: Is the `bazelisk` tool is being used
+- `bazelisk`: Whether the `bazelisk` tool is being used
 - `ci`: Is the build occurring in CI/CD or locally
 - `counter`: The build counter if available
-- `deps`: The active set of bzlmod modules which have opted into telemetry
+- `deps`: The modules in `MODULE.bazel.lock` that were resolved from a registry, with versions
 - `has_bazel_prelude`: Does the project use a `prelude_bazel`
 - `has_bazel_tool`: Does the project use a `tools/bazel` script
 - `has_bazel_workspace`: Does the project still have a `WORKSPACE` file
@@ -125,6 +139,21 @@ For transparency reports are persisted into the Bazel configuration and can be i
 ``` shellsession
 ❯ cat $(bazel info output_base)/external/*aspect_tools_telemetry_report/report.json
 ```
+
+## What happens to reports
+
+Reports are received by infrastructure Aspect operates, and are handled as follows:
+
+- `id_day` is re-keyed at ingestion with a server-side secret that rotates daily; each
+  day's outgoing secret is destroyed, so a closed day's stored IDs cannot be matched
+  back to any repository.
+- Fields collected by older versions of this module but not current ones (`user`,
+  `org`, `id`, `shell`, `has_bazel_module`) are discarded at ingestion and never stored.
+- Raw reports are deleted after at most 365 days, and reports that fail processing
+  after 30 days.
+- The aggregate statistics built from reports are published for the community at
+  https://aspect.build/open-source/stats, with the dataset behind the charts at
+  https://stats.aspect.build/stats.json.
 
 ## Privacy policy
 
