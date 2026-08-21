@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# Integration test: telemetry notice is shown on first invocation, curl is called on second.
+# Integration test: telemetry notice is shown on first invocation, curl is called on
+# second, and a repository without a lockfile gets the louder uploading notice and a
+# curl call on every invocation (the record that the notice was shown persists via the
+# lockfile, so without one every evaluation is a first evaluation).
 # Requires Bazel 8.5+ (facts API needed to persist notice_version across invocations).
 #
 # ASPECT_TOOLS_TELEMETRY_TEST is observed by the extension via module_ctx.getenv(), so
@@ -72,3 +75,32 @@ if [[ ! -f "$CURL_LOG" ]]; then
 fi
 echo "PASS: curl called on second run"
 echo "curl args: $(cat "$CURL_LOG")"
+
+echo "=== Runs 3 and 4: no lockfile; expect the uploading notice AND a curl call every run ==="
+# Without MODULE.bazel.lock the shown-notice record cannot persist, so every
+# evaluation is a first evaluation. --lockfile_mode=off keeps Bazel from
+# recreating the file between runs, and each run gets a fresh output base to
+# model the realistic lockfile-less case: ephemeral CI, where the repository
+# rule runs every job.
+rm -f "$EXAMPLE_DIR/MODULE.bazel.lock"
+
+for run in 3 4; do
+    RUN_LOG="$WORK_DIR/run$run.log"
+    ASPECT_TOOLS_TELEMETRY_TEST="$run" USE_BAZEL_VERSION=9.x bazel --output_base="$WORK_DIR/output-nolock-$run" build //:report \
+        --lockfile_mode=off \
+        --repo_env "PATH=${REPO_ENV_PATH}" \
+        2>&1 | tee "$RUN_LOG"
+
+    if ! grep -q "Aspect Telemetry is uploading" "$RUN_LOG"; then
+        echo "FAIL: uploading notice was not printed on lockfile-less run $run (expected every run)"
+        exit 1
+    fi
+    echo "PASS: uploading notice printed on lockfile-less run $run"
+
+    if [[ ! -f "$CURL_LOG" ]]; then
+        echo "FAIL: curl was not called on lockfile-less run $run (expected a call every run)"
+        exit 1
+    fi
+    echo "PASS: curl called on lockfile-less run $run"
+    rm -f "$CURL_LOG"
+done
