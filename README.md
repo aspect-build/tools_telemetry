@@ -46,8 +46,13 @@ Some of the collector features can be overridden or salted for further privacy i
 ### Example `.bazelrc` configurations
 
 ``` shell
-# Since sha1 is a vulnerable hash we recommend providing a salt value
-common --repo_env=ASPECT_TOOLS_TELEMETRY_SALT=[FIXME small random value]
+# Disable entirely with the industry-standard variable (https://consoledonottrack.com)
+common --repo_env=DO_NOT_TRACK=1
+
+# Salt every hash so the values are unrecomputable without it; any value works,
+# e.g. from `openssl rand -hex 8`. For a public repository, prefer setting it
+# as a CI secret over committing it.
+common --repo_env=ASPECT_TOOLS_TELEMETRY_SALT=b2d1a30326e6ba91
 
 common --repo_env=ASPECT_TOOLS_TELEMETRY=all  # enabled (default)
 common --repo_env=ASPECT_TOOLS_TELEMETRY=deps # only report aspect deps
