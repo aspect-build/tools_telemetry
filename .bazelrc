@@ -1,3 +1,5 @@
+try-import %workspace%/.aspect/bazelrc
+
 common --repo_env=ASPECT_TOOLS_TELEMETRY=bdd36bbd988c2fa6
 
 # Build without the bytes

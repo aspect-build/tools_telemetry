@@ -1,3 +1,5 @@
+try-import %workspace%/../../.aspect/bazelrc
+
 # Build without the bytes
 common:ci --remote_download_outputs=minimal
 common:ci --nobuild_runfile_links
